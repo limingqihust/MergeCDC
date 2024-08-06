@@ -50,9 +50,7 @@ void CodedMaster::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank
-       << ": CODEGEN | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;
+  cout << "CODEGEN " << avgTime/numWorker << " " << maxTime << endl;
       
 
   // COMPUTE MAP TIME
@@ -63,9 +61,7 @@ void CodedMaster::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank
-       << ": MAP     | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;  
+  cout << "MAP " << avgTime/numWorker << " " << maxTime << endl;
   
   // inner node intermediate value transfer
   double innerTx[numWorker + 2], rTx = 0;
@@ -78,10 +74,7 @@ void CodedMaster::run()
     avgTime += rcvTime[ i ];
     maxTime += innerTx[i];
   }
-  cout << rank
-       << ": INNERTRANS     | Sum = " << setw(10) << avgTime
-       << "   Avg = " << setw(10) << avgTime/(numWorker - numReducer)
-       << "   TX = " << setw(10) << maxTime << " MB" << endl;  
+  cout << "INNERTRANS " << avgTime/(numWorker - numReducer) << " " << maxTime << endl;
 
   // COMPUTE ENCODE TIME
   MPI_Gather( &rTime, 1, MPI_DOUBLE, rcvTime, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD );
@@ -91,47 +84,43 @@ void CodedMaster::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank
-       << ": ENCODE  | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;  
+  cout << "ENCODE " << avgTime/numWorker << " " << maxTime << endl;
 
   // COMPUTE SHUFFLE TIME
   avgTime = 0;
+  maxTime = 0;
   double tx = 0;
   double avgtx = 0;
   for( int i = 1; i <= numWorker; i++ ) {
     MPI_Recv( &rTime, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
     avgTime += rTime;    
+    maxTime = max( maxTime, rTime );
     MPI_Recv( &tx, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
     avgtx += tx;
   }
-  cout << rank
-       << ": SHUFFLE | SumTime = " << setw(10) << avgTime << "   AvgTime = " << setw(10) << avgTime/numWorker
-       << "   TX = " << setw(10) << avgtx << " MB" << endl;
-  
+  cout << "SHUFFLE " << avgTime/numWorker << " " << maxTime << " " << avgtx << endl;
   avgTime = 0;
+  maxTime = 0;
   avgtx = 0;
   for( int i = 1; i <= numWorker; i++ ) {
     MPI_Recv( &rTime, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
     avgTime += rTime;
+    maxTime = max( maxTime, rTime );
     MPI_Recv( &tx, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
     avgtx += tx;
   }
-  cout << rank
-       << ": SHUFFLE(P2P) | SumTime = " << setw(10) << avgTime << "   AvgTime = " << setw(10) << avgTime/numWorker
-       << "   TX = " << setw(10) << avgtx << " MB" << endl;
-  
+  cout << "SHUFFLE(P2P) " << avgTime/numWorker << " " << maxTime << endl;
   avgTime = 0;
+  maxTime = 0;
   avgtx = 0;
   for( int i = 1; i <= numWorker; i++ ) {
     MPI_Recv( &rTime, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
     avgTime += rTime;
+    maxTime = max( maxTime, rTime );
     MPI_Recv( &tx, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
     avgtx += tx;
   }
-  cout << rank
-       << ": SHUFFLE(MULTI) | SumTime = " << setw(10) << avgTime << "   AvgTime = " << setw(10) << avgTime/numReducer
-       << "   TX = " << setw(10) << avgtx << " MB" << endl;
+  cout << "SHUFFLE(MULTI) " << avgTime/numWorker << " " << maxTime << endl;
 
   // COMPUTE DECODE TIME
   MPI_Gather( &rTime, 1, MPI_DOUBLE, rcvTime, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD );
@@ -142,10 +131,7 @@ void CodedMaster::run()
     avgTime += rcvTime[ reducerNodes[i] ];
     maxTime = max( maxTime, rcvTime[ reducerNodes[i] ] );
   }
-  cout << rank
-       << ": DECODE  | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;  
-
+  cout << "DECODE " << avgTime/numWorker << " " << maxTime << endl;
   // COMPUTE REDUCE TIME
   MPI_Gather( &rTime, 1, MPI_DOUBLE, rcvTime, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD );
   avgTime = 0;
@@ -154,9 +140,7 @@ void CodedMaster::run()
     avgTime += rcvTime[ reducerNodes[i] ];
     maxTime = max( maxTime, rcvTime[ reducerNodes[i] ] );
   }
-  cout << rank
-       << ": REDUCE  | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;      
+  cout << "REDUCE " << avgTime/reducerNodes.size() << " " << maxTime << endl;
   
 
   // CLEAN UP MEMORY

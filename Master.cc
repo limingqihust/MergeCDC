@@ -52,8 +52,7 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": MAP     | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;
+  cout << "MAP " << avgTime/numWorker << " " << maxTime << endl;
 
 
   // // COMPUTE PACKING TIME
@@ -72,16 +71,17 @@ void Master::run()
   double tx = 0;
   double avgTx = 0;
   avgTime = 0;
+  maxTime = 0;
   for( unsigned int i = 1; i <= numWorker; i++ ) {
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Recv(&rTime, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     avgTime += rTime;
+    maxTime = max( maxTime, rTime );
     MPI_Recv(&tx, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);    
     avgTx += tx;
   }
-  cout << rank << ": SHUFFLE | SumTime = " << setw(10) << avgTime << "   AvgTime = " << setw(10) << avgTime/numWorker
-       << "   Tx = " << setw(10) << avgTx << " MB" << endl;  
+  cout << "SHUFFLE " << avgTime/numWorker << " " << maxTime << " " << avgTx << endl;
 
 
   // COMPUTE UNPACK TIME
@@ -92,8 +92,7 @@ void Master::run()
     avgTime += rcvTime[ reducerNodes[i] ];
     maxTime = max( maxTime, rcvTime[ reducerNodes[i] ] );
   }
-  cout << rank << ": UNPACK  | Avg = " << setw(10) << avgTime/reducerNodes.size()
-       << "   Max = " << setw(10) << maxTime << endl;
+  cout << "UNPACK " << avgTime/numWorker << " " << maxTime << endl;
   
   
   
@@ -105,8 +104,7 @@ void Master::run()
     avgTime += rcvTime[ reducerNodes[i] ];
     maxTime = max( maxTime, rcvTime[ reducerNodes[i] ] );
   }
-  cout << rank << ": REDUCE  | Avg = " << setw(10) << avgTime/reducerNodes.size()
-       << "   Max = " << setw(10) << maxTime << endl;      
+  cout << "REDUCE " << avgTime/reducerNodes.size() << " " << maxTime << endl; 
   
 
   // CLEAN UP MEMORY

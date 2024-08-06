@@ -61,16 +61,16 @@ class Configuration {
     // strcpy(outputPath, "./Output/tera10G");
     // strcpy(partitionPath, "./Partition/tera10G");
     // numSamples = 100000000;
-    strcpy(inputPath, "./Input/Input10000");
-    strcpy(outputPath, "./Output/Output10000");
-    strcpy(partitionPath, "./Partition/Output10000");
+    strcpy(inputPath, "/home/lmq/MergeCDC/Input/Input10000");
+    strcpy(outputPath, "/home/lmq/MergeCDC/Output/Output10000");
+    strcpy(partitionPath, "/home/lmq/MergeCDC/Partition/Output10000");
     numSamples = 10000;
     // strcpy(inputPath, "./Input/Input10000000");
     // strcpy(outputPath, "./Output/Input10000000");
     // strcpy(partitionPath, "./Partition/Input10000000");
     // numSamples = 10000000;
-    strcpy(distributionPath, "./Distribution/Distribution");
-    strcpy(combinationPath, "./Distribution/combination_my");
+    strcpy(distributionPath, "/home/lmq/MergeCDC/Distribution/Distribution");
+    strcpy(combinationPath, "/home/lmq/MergeCDC/Distribution/combination_my");
   }
   ~Configuration() {}
   const static unsigned int KEY_SIZE = 10;

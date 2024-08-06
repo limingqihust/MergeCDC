@@ -1,1 +1,3 @@
 .vscode
+*.o
+Input/Input10000_*
