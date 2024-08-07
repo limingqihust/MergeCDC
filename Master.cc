@@ -12,6 +12,9 @@ using namespace std;
 
 void Master::run()
 {
+  struct timeval total_start, total_end;
+  double total_time;
+  gettimeofday(&total_start,NULL);
   if ( totalNode != 1 + conf.getNumReducer() ) {
     cout << "The number of workers mismatches the number of processes.\n";
     assert( false );
@@ -95,6 +98,8 @@ void Master::run()
   
   
   
+  heapSort();
+  encodeAndSort();
   // COMPUTE REDUCE TIME
   MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, rcvTime, 1, MPI::DOUBLE, 0 );
   avgTime = 0;
@@ -106,9 +111,140 @@ void Master::run()
   cout << rank << ": REDUCE  | Avg = " << setw(10) << avgTime/numWorker
        << "   Max = " << setw(10) << maxTime << endl;      
   
-
+  receiveAndDecode();
   // CLEAN UP MEMORY
   for ( auto it = partitionList->begin(); it != partitionList->end(); it++ ) {
     delete [] *it;
+  }
+  for (auto heap: heaps) {
+    for (auto key: heap) {
+      delete [] key;
+    }
+  }
+  for (auto key: encodedList) {
+    delete [] key;
+  }
+  gettimeofday(&total_end,NULL);
+  total_time = (total_end.tv_sec*1000000.0 + total_end.tv_usec - total_start.tv_sec*1000000.0 - total_start.tv_usec) / 1000000.0;
+  std::cout << "total time: " << total_time << std::endl;
+}
+
+
+void Master::heapSort() {
+  // receive keys from workers
+  int size = conf.getNumSamples() / conf.getNumReducer();
+  double time = 0;
+  for (int i = 1; i <= conf.getNumReducer(); i++) {
+    // std::cout << "master receive from rank " << i << " size: " << size << std::endl;
+    LineList heap;
+    for (int j = 0; j < size; j++) {
+      unsigned char* key = new unsigned char[conf.getKeySize()];
+      MPI::COMM_WORLD.Recv(key, conf.getKeySize(), MPI::UNSIGNED_CHAR, i, 0);
+      heap.push_back(key);
+    }
+    // printLineList(heap);
+    heaps.push_back(heap);
+    // std::cout << "master receive from rank " << i << " done" << std::endl;
+    double time_temp = 0;
+    MPI::COMM_WORLD.Recv(&time_temp, 1, MPI::DOUBLE, i, 0);
+    time += time_temp;
+    time /= conf.getNumReducer();
+    MPI::COMM_WORLD.Barrier();
+  }
+  std::cout << "encode pre time: " << time << std::endl;
+
+}
+
+void Master::printLineList(LineList list)
+{
+  unsigned long int i = 0;
+  for ( auto it = list.begin(); it != list.end(); ++it ) {
+    cout << rank << ": " << i++ << "| ";
+    printKey( *it, conf.getKeySize() );
+    cout << endl;
+  }
+}
+
+
+void Master::encodeAndSort() {
+
+  struct timeval start, end;
+  double time;
+
+  int size = conf.getNumSamples() / conf.getNumReducer();
+  for (int i = 0; i < size; i++) {
+    unsigned char* key = new unsigned char[conf.getKeySize()];
+    memset(key, 0, conf.getKeySize());
+    encodedList.push_back(key);
+  }
+  gettimeofday(&start,NULL);
+  for (int i = 0; i < conf.getNumReducer(); i++) {
+    for (int j = 0; j < size; j++) {
+      for (int k = 0; k < conf.getKeySize(); k++) {
+        encodedList[j][k] += heaps[i][j][k];
+      }
+    }
+  }
+  // std::cout << "encoded list:" << std::endl;
+  // printLineList(encodedList);
+  gettimeofday(&end,NULL);
+  time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+  std::cout << "encode time: " << time << std::endl;
+  MPI::COMM_WORLD.Barrier();
+
+  std::sort(encodedList.begin(), encodedList.end(), [&](const unsigned char* keyA, const unsigned char* keyB) {
+    return cmpKey(keyA, keyB, conf.getKeySize());
+  });
+}
+
+
+void Master::receiveAndDecode() {
+  int fail_index = 15;
+  std::vector<LineList> decode_lists;
+  struct timeval start, end;
+  double time;
+  gettimeofday(&start,NULL);
+  int size = conf.getNumSamples() / conf.getNumReducer();
+  // receive 
+  for (int i = 1; i <= conf.getNumReducer(); i++) {
+    if (i == fail_index) {
+      MPI::COMM_WORLD.Barrier();
+      continue;
+    }
+    // receive from worker[i]
+    LineList decode_list;
+    for (int j = 0; j < size; j++) {
+      unsigned char* key = new unsigned char[conf.getKeySize()];
+      MPI::COMM_WORLD.Recv(key, conf.getKeySize(), MPI::UNSIGNED_CHAR, i, 0);
+      decode_list.push_back(key);
+    }
+    decode_lists.push_back(decode_list);
+    MPI::COMM_WORLD.Barrier();
+  }
+  gettimeofday(&end, NULL);
+  time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+  std::cout << "transfer time: " << time << std::endl;
+
+
+  // decode
+  gettimeofday(&start,NULL);
+  for (int i = 0; i < conf.getNumReducer() - 1; i++) {
+    for (int j = 0; j < size; j++) {
+      for (int k = 0; k < conf.getKeySize(); k++) {
+        encodedList[j][k] -= decode_lists[i][j][k];
+      }
+    }
+  }
+  // printLineList(encodedList);
+
+  gettimeofday(&end, NULL);
+  time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+  std::cout << "decode time: " << time << std::endl;
+
+
+  for (auto decode_list: decode_lists) {
+    for (auto key: decode_list) {
+      delete [] key;
+    }
   }
 }

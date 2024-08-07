@@ -40,6 +40,10 @@ class Worker
   void printPartitionCollection();
   void outputLocalList();
   TrieNode* buildTrie( PartitionList* partitionList, int lower, int upper, unsigned char* prefix, int prefixSize, int maxDepth );
+  void heapSort();
+  void sendDecodedList();
+  void printLineList(LineList list);
+
 };
 
 

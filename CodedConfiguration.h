@@ -14,9 +14,9 @@ class CodedConfiguration : public Configuration {
     numReducer = 3;  // K
     load = 2;        // r    
     
-    inputPath = "./Input/Input10000-C";
-    outputPath = "./Output/Output10000-C";
-    partitionPath = "./Partition/Partition10000-C";
+    strcpy(inputPath, "./Input/Input10000-C");
+    strcpy(outputPath, "./Output/Output10000-C");
+    strcpy(partitionPath, "./Partition/Partition10000-C");
     numSamples = 10000;    
   }
   ~CodedConfiguration() {}

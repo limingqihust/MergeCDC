@@ -1,25 +1,30 @@
 #ifndef _MR_CONFIGURATION
 #define _MR_CONFIGURATION
 
+#include <string.h>
+#include "Common.h"
+#include "Utility.h"
+#include <algorithm>
+#include <sys/time.h>
 class Configuration {
 
  protected:
   unsigned int numReducer;
   unsigned int numInput;  
   
-  const char *inputPath;
-  const char *outputPath;
-  const char *partitionPath;
+  char inputPath[1024];
+  char outputPath[1024];
+  char partitionPath[1024];
   unsigned long numSamples;
   
  public:
   Configuration() {
-    numReducer = 3;
+    numReducer = 15;
     numInput = numReducer;    
     
-    inputPath = "./Input/Input10000";
-    outputPath = "./Output/Output10000";
-    partitionPath = "./Partition/Partition10000";
+    strcpy(inputPath, "./Input/Input10000");
+    strcpy(outputPath, "./Output/Output10000");
+    strcpy(partitionPath, "./Partition/Partition10000");
     numSamples = 10000;
   }
   ~Configuration() {}

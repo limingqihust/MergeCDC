@@ -53,11 +53,13 @@ void Worker::run()
 
   // EXECUTE MAP PHASE
   clock_t time;
+  struct timeval start, end;
   double rTime;
   execMap();
 
   
   // SHUFFLING PHASE
+  gettimeofday( &start, NULL );
   unsigned int lineSize = conf->getLineSize();
   for ( unsigned int i = 1; i <= conf->getNumReducer(); i++ ) {
     if ( i == rank ) {
@@ -82,6 +84,8 @@ void Worker::run()
       time = clock() - time;
       rTime = double( time ) / CLOCKS_PER_SEC;        
       double txRate = ( tolSize * 8 * 1e-6 ) / ( double( txTime ) / CLOCKS_PER_SEC );
+      gettimeofday( &end, NULL );
+      rTime = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
       MPI::COMM_WORLD.Send( &rTime, 1, MPI::DOUBLE, 0, 0 );
       MPI::COMM_WORLD.Send( &txRate, 1, MPI::DOUBLE, 0, 0 );
       //cout << rank << ": Avg sending rate is " << ( tolSize * 8 ) / ( rtxTime * 1e6 ) << " Mbps, Data size is " << tolSize / 1e6 << " MByte\n";
@@ -99,6 +103,7 @@ void Worker::run()
 
 
   // UNPACK PHASE
+  gettimeofday( &start, NULL );
   time = -clock();
   // append local partition to localList
   for ( auto it = partitionCollection[ rank - 1 ]->begin(); it != partitionCollection[ rank - 1 ]->end(); ++it ) {
@@ -122,16 +127,21 @@ void Worker::run()
   }
   time += clock();
   rTime = double( time ) / CLOCKS_PER_SEC;    
+  gettimeofday( &end, NULL );
+  rTime = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, NULL, 1, MPI::DOUBLE, 0 );      
 
-  
+  heapSort();
   // REDUCE PHASE
+  gettimeofday( &start, NULL );
   time = clock();  
   execReduce();
   time = clock() - time;
   rTime = double( time ) / CLOCKS_PER_SEC;    
+  gettimeofday( &end, NULL );
+  rTime = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, NULL, 1, MPI::DOUBLE, 0 );    
-  
+  sendDecodedList();
   outputLocalList();
   //printLocalList();
 }
@@ -141,6 +151,8 @@ void Worker::execMap()
 {
   clock_t time = 0;
   double rTime = 0;
+  struct timeval start, end;
+  gettimeofday( &start, NULL );
   time -= clock();
   
   // READ INPUT FILE AND PARTITION DATA
@@ -175,12 +187,13 @@ void Worker::execMap()
     partitionCollection.at( wid )->push_back( buff );
   }
   inputFile.close();  
-  time += clock();
-  rTime = double( time ) / CLOCKS_PER_SEC;  
-  MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, NULL, 1, MPI::DOUBLE, 0 );    
+  gettimeofday( &end, NULL );
+  rTime = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+  MPI::COMM_WORLD.Gather(&rTime, 1, MPI::DOUBLE, NULL, 1, MPI::DOUBLE, 0 );    
 
 
   time = -clock();
+  gettimeofday( &start, NULL );
   // Packet partitioned data to a chunk
   for( unsigned int i = 0; i < conf->getNumReducer(); i++ ) {
     if( i == rank - 1 ) {
@@ -199,6 +212,8 @@ void Worker::execMap()
   }
   time += clock();
   rTime = double( time ) / CLOCKS_PER_SEC;
+  gettimeofday( &end, NULL );
+  rTime = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, NULL, 1, MPI::DOUBLE, 0 );    
 }
 
@@ -273,4 +288,75 @@ TrieNode* Worker::buildTrie( PartitionList* partitionList, int lower, int upper,
   prefix[ prefixSize ] = 255;
   result->setChild( 255, buildTrie( partitionList, curr, upper, prefix, prefixSize + 1, maxDepth ) );
   return result;
+}
+
+void Worker::heapSort() {
+  // copy localList to lists
+  LineList heap;
+  for (auto it = localList.begin(); it != localList.end(); it++) {
+    unsigned char* key = new unsigned char[10];
+    memcpy(key, *it, conf->getKeySize());
+    heap.push_back(key);
+  }
+
+  std::make_heap(heap.begin(), heap.end(), [&](const unsigned char* keyA, const unsigned char* keyB) {
+    return !cmpKey(keyA, keyB, conf->getKeySize());
+  });
+
+  // keys need to send to master
+  int size = conf->getNumSamples() / conf->getNumReducer();
+
+  for (int i = 1; i <= conf->getNumReducer(); i++) {
+    if (rank == i) {
+      struct timeval start, end;
+      double time;
+      gettimeofday(&start,NULL);
+      // std::cout << "rank: " << rank << " send to master" << std::endl;
+      for (int i = 0; i < size; i++) {
+        std::pop_heap(heap.begin(), heap.end(), [&](const unsigned char* keyA, const unsigned char* keyB) {
+          return !cmpKey(keyA, keyB, conf->getKeySize());
+        }); 
+        unsigned char* key = heap.back(); 
+        heap.pop_back(); 
+        MPI::COMM_WORLD.Send(key, conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0 );
+        delete [] key;
+      }
+      // std::cout << "rank: " << rank << " send to master done" << std::endl;
+      gettimeofday(&end,NULL);
+      time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+      MPI::COMM_WORLD.Send(&time, 1, MPI::DOUBLE, 0, 0);
+      MPI::COMM_WORLD.Barrier();
+    } else {
+      MPI::COMM_WORLD.Barrier();
+    }
+  }
+  MPI::COMM_WORLD.Barrier();
+
+}
+
+
+void Worker::printLineList(LineList list)
+{
+  unsigned long int i = 0;
+  for ( auto it = list.begin(); it != list.end(); ++it ) {
+    cout << rank << ": " << i++ << "| ";
+    printKey( *it, conf->getKeySize() );
+    cout << endl;
+  }
+}
+
+void Worker::sendDecodedList() {
+  int fail_index = 15;
+  for (int i = 1; i <= conf->getNumReducer(); i++) {
+    if (i == fail_index || i != rank) {
+      MPI::COMM_WORLD.Barrier();
+      continue;
+    }
+    int size = conf->getNumSamples() / conf->getNumReducer();
+    for (int i = 0; i < size; i++) {
+      unsigned char* key = localList[i];
+      MPI::COMM_WORLD.Send(key, conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0 );
+    }
+    MPI::COMM_WORLD.Barrier();
+  }
 }
