@@ -103,8 +103,8 @@ void Master::run()
   
   heapSort();
   encodeAndSort();
-  assignReduceCodedJob();
-  assignReduceDupJob();
+  // assignReduceCodedJob();
+  // assignReduceDupJob();
   // COMPUTE REDUCE TIME
   MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, rcvTime, 1, MPI::DOUBLE, 0 );
   avgTime = 0;
@@ -225,18 +225,26 @@ void Master::encodeAndSort() {
 
 
 void Master::receiveAndDecode() {
-  int fail_index = 15;
   std::vector<LineList> decode_lists;
   struct timeval start, end;
   double time;
-  gettimeofday(&start,NULL);
   int size = conf.getNumSamples() / conf.getNumReducer();
+  unsigned char* buffer = new unsigned char[size * (conf.getKeySize() + conf.getValueSize())];
+  MPI::COMM_WORLD.Barrier();
+  gettimeofday(&start,NULL);
+  for (int i = 1; i <= conf.getNumReducer(); i++) {
+    MPI::COMM_WORLD.Recv(buffer, size * (conf.getKeySize() + conf.getValueSize()), MPI::UNSIGNED_CHAR, i, 0);
+    MPI::COMM_WORLD.Barrier();
+  }
+  gettimeofday(&end, NULL);
+  delete [] buffer;
+
+  time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+  time /= conf.getNumReducer();
+  std::cout << "transfer time: " << time << std::endl;
+  
   // receive 
   for (int i = 1; i <= conf.getNumReducer(); i++) {
-    if (i == fail_index) {
-      MPI::COMM_WORLD.Barrier();
-      continue;
-    }
     // receive from worker[i]
     LineList decode_list;
     for (int j = 0; j < size; j++) {
@@ -247,9 +255,7 @@ void Master::receiveAndDecode() {
     decode_lists.push_back(decode_list);
     MPI::COMM_WORLD.Barrier();
   }
-  gettimeofday(&end, NULL);
-  time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
-  std::cout << "transfer time: " << time << std::endl;
+
 
 
   // decode

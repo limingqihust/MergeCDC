@@ -134,8 +134,8 @@ void Worker::run()
   heapSort();
   // receiveReduceCodedJob();
   // receiveReduceDupJob();
-  MPI::COMM_WORLD.Barrier();
-  MPI::COMM_WORLD.Barrier();
+  // MPI::COMM_WORLD.Barrier();
+  // MPI::COMM_WORLD.Barrier();
   // REDUCE PHASE
   gettimeofday( &start, NULL );
   time = clock();  
@@ -359,9 +359,22 @@ void Worker::printLineList(LineList list)
 }
 
 void Worker::sendDecodedList() {
-  int fail_index = 15;
+  int size = conf->getNumSamples() / conf->getNumReducer();
+  unsigned char* keys = new unsigned char[size * (conf->getKeySize() + conf->getValueSize())];
+  for (int i = 0; i < size; i++) {
+    unsigned char* key = localList[i];
+    memcpy(keys + i * (conf->getKeySize() + conf->getValueSize()), key, conf->getKeySize());
+  }
+  MPI::COMM_WORLD.Barrier();
   for (int i = 1; i <= conf->getNumReducer(); i++) {
-    if (i == fail_index || i != rank) {
+    if (i == rank) {
+      MPI::COMM_WORLD.Send(keys, size * (conf->getKeySize() + conf->getValueSize()), MPI::UNSIGNED_CHAR, 0, 0 );
+    }
+    MPI::COMM_WORLD.Barrier();
+  }
+  delete [] keys;
+  for (int i = 1; i <= conf->getNumReducer(); i++) {
+    if (i != rank) {
       MPI::COMM_WORLD.Barrier();
       continue;
     }
