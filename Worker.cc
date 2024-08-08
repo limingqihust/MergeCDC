@@ -59,7 +59,6 @@ void Worker::run()
 
   
   // SHUFFLING PHASE
-  gettimeofday( &start, NULL );
   unsigned int lineSize = conf->getLineSize();
   for ( unsigned int i = 1; i <= conf->getNumReducer(); i++ ) {
     if ( i == rank ) {
@@ -68,6 +67,7 @@ void Worker::run()
       MPI::COMM_WORLD.Barrier();
       time = clock();  	            
       // Sending from node i
+      gettimeofday( &start, NULL );
       for ( unsigned int j = 1; j <= conf->getNumReducer(); j++ ) {
 	if ( j == i ) {
 	  continue;
@@ -132,6 +132,10 @@ void Worker::run()
   MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, NULL, 1, MPI::DOUBLE, 0 );      
 
   heapSort();
+  // receiveReduceCodedJob();
+  // receiveReduceDupJob();
+  MPI::COMM_WORLD.Barrier();
+  MPI::COMM_WORLD.Barrier();
   // REDUCE PHASE
   gettimeofday( &start, NULL );
   time = clock();  
@@ -291,6 +295,9 @@ TrieNode* Worker::buildTrie( PartitionList* partitionList, int lower, int upper,
 }
 
 void Worker::heapSort() {
+  double make_heap_time;
+  struct timeval make_heap_start, make_heap_end;
+  gettimeofday(&make_heap_start, NULL);
   // copy localList to lists
   LineList heap;
   for (auto it = localList.begin(); it != localList.end(); it++) {
@@ -302,7 +309,8 @@ void Worker::heapSort() {
   std::make_heap(heap.begin(), heap.end(), [&](const unsigned char* keyA, const unsigned char* keyB) {
     return !cmpKey(keyA, keyB, conf->getKeySize());
   });
-
+  gettimeofday(&make_heap_end, NULL);
+  make_heap_time = (make_heap_end.tv_sec*1000000.0 + make_heap_end.tv_usec - make_heap_start.tv_sec*1000000.0 - make_heap_start.tv_usec) / 1000000.0;
   // keys need to send to master
   int size = conf->getNumSamples() / conf->getNumReducer();
 
@@ -311,6 +319,7 @@ void Worker::heapSort() {
       struct timeval start, end;
       double time;
       gettimeofday(&start,NULL);
+      std::vector<unsigned char*> key_buffer;
       // std::cout << "rank: " << rank << " send to master" << std::endl;
       for (int i = 0; i < size; i++) {
         std::pop_heap(heap.begin(), heap.end(), [&](const unsigned char* keyA, const unsigned char* keyB) {
@@ -318,12 +327,16 @@ void Worker::heapSort() {
         }); 
         unsigned char* key = heap.back(); 
         heap.pop_back(); 
-        MPI::COMM_WORLD.Send(key, conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0 );
-        delete [] key;
+        key_buffer.push_back(key);
       }
       // std::cout << "rank: " << rank << " send to master done" << std::endl;
       gettimeofday(&end,NULL);
+      for (auto key: key_buffer) {
+        MPI::COMM_WORLD.Send(key, conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0 );
+        delete [] key;
+      }
       time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+      time += make_heap_time;
       MPI::COMM_WORLD.Send(&time, 1, MPI::DOUBLE, 0, 0);
       MPI::COMM_WORLD.Barrier();
     } else {
@@ -356,6 +369,56 @@ void Worker::sendDecodedList() {
     for (int i = 0; i < size; i++) {
       unsigned char* key = localList[i];
       MPI::COMM_WORLD.Send(key, conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0 );
+    }
+    MPI::COMM_WORLD.Barrier();
+  }
+}
+
+void Worker::receiveReduceCodedJob() {
+  MPI::COMM_WORLD.Barrier();
+  int size = conf->getNumSamples() / conf->getNumReducer();
+  for (int i = 1; i <= conf->getNumReducer(); i++) {
+    if (i == rank) {
+      unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
+      MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+      delete [] buffer;
+    }
+    MPI::COMM_WORLD.Barrier();
+  }
+
+  if (rank == 1) {
+    unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
+    MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+    delete [] buffer;
+  }
+  MPI::COMM_WORLD.Barrier();
+
+  if (rank == 2) {
+    unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
+    MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+    delete [] buffer;
+  }
+  MPI::COMM_WORLD.Barrier();
+
+}
+
+void Worker::receiveReduceDupJob() {
+  MPI::COMM_WORLD.Barrier();
+  int size = conf->getNumSamples() / conf->getNumReducer();
+  for (int i = 1; i <= conf->getNumReducer(); i++) {
+    if (i == rank) {
+      unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
+      MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+      delete [] buffer;
+    }
+    MPI::COMM_WORLD.Barrier();
+  }
+
+  for (int i = 1; i <= conf->getNumReducer(); i++) {
+    if (i == rank) {
+      unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
+      MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+      delete [] buffer;
     }
     MPI::COMM_WORLD.Barrier();
   }

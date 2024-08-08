@@ -11,6 +11,7 @@ class Master
   unsigned int totalNode;
   std::vector<LineList> heaps;
   LineList encodedList;
+  LineList encodedList2;
 
  public:
  Master( unsigned int _rank, unsigned int _totalNode ): rank( _rank ), totalNode( _totalNode ) {};
@@ -21,6 +22,8 @@ class Master
   void printLineList(LineList list);
   void encodeAndSort();
   void receiveAndDecode();
+  void assignReduceCodedJob();
+  void assignReduceDupJob();
 };
 
 #endif

@@ -18,14 +18,19 @@ class Configuration {
   unsigned long numSamples;
   
  public:
+  int encodedListNum = 2;;
   Configuration() {
-    numReducer = 15;
+    numReducer = 20;
     numInput = numReducer;    
     
-    strcpy(inputPath, "./Input/Input10000");
-    strcpy(outputPath, "./Output/Output10000");
-    strcpy(partitionPath, "./Partition/Partition10000");
-    numSamples = 10000;
+    // strcpy(inputPath, "./Input/Input10000");
+    // strcpy(outputPath, "./Output/Output10000");
+    // strcpy(partitionPath, "./Partition/Partition10000");
+    strcpy(inputPath, "./Input/tera10G");
+    strcpy(outputPath, "./Output/tera10G");
+    strcpy(partitionPath, "./Partition/tera10G");
+    // numSamples = 10000;
+    numSamples = 100000000;
   }
   ~Configuration() {}
   const static unsigned int KEY_SIZE = 10;

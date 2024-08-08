@@ -43,7 +43,8 @@ class Worker
   void heapSort();
   void sendDecodedList();
   void printLineList(LineList list);
-
+  void receiveReduceCodedJob();
+  void receiveReduceDupJob();
 };
 
 
