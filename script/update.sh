@@ -14,8 +14,8 @@ do
     fi
     # scp -r /root/exp2 $USER@$host:/root/
     # scp -r /root/MergeCDC/script/tc.sh  $USER@$host:/root/MergeCDC/script/
-    # scp /root/MergeCDC/TeraSort $USER@$host:/root/MergeCDC/
-    # scp /root/MergeCDC/CodedTeraSort $USER@$host:/root/MergeCDC/
+    scp /root/exp2/MergeCDC/TeraSort $USER@$host:/root/exp2/MergeCDC/
+    scp /root/exp2/MergeCDC/CodedTeraSort $USER@$host:/root/exp2/MergeCDC/
 } &
 done
 wait
