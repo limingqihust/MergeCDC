@@ -57,20 +57,20 @@ class Configuration {
     enableInnerCode = true;
     enableNodeCombination = true;
 
-    // strcpy(inputPath, "./Input/tera10G");
-    // strcpy(outputPath, "./Output/tera10G");
-    // strcpy(partitionPath, "./Partition/tera10G");
-    // numSamples = 100000000;
-    strcpy(inputPath, "/home/lmq/MergeCDC/Input/Input10000");
-    strcpy(outputPath, "/home/lmq/MergeCDC/Output/Output10000");
-    strcpy(partitionPath, "/home/lmq/MergeCDC/Partition/Output10000");
-    numSamples = 10000;
+    strcpy(inputPath, "/root/exp2/MergeCDC/Input/tera10G");
+    strcpy(outputPath, "/root/exp2/MergeCDC/Output/tera10G");
+    strcpy(partitionPath, "/root/exp2/MergeCDC/Partition/tera10G");
+    numSamples = 100000000;
+    // strcpy(inputPath, "/home/lmq/MergeCDC/Input/Input10000");
+    // strcpy(outputPath, "/home/lmq/MergeCDC/Output/Output10000");
+    // strcpy(partitionPath, "/home/lmq/MergeCDC/Partition/Output10000");
+    // numSamples = 10000;
     // strcpy(inputPath, "./Input/Input10000000");
     // strcpy(outputPath, "./Output/Input10000000");
     // strcpy(partitionPath, "./Partition/Input10000000");
     // numSamples = 10000000;
-    strcpy(distributionPath, "/home/lmq/MergeCDC/Distribution/Distribution");
-    strcpy(combinationPath, "/home/lmq/MergeCDC/Distribution/combination_my");
+    strcpy(distributionPath, "/root/exp2/MergeCDC/Distribution/Distribution");
+    strcpy(combinationPath, "/root/exp2/MergeCDC/Distribution/combination_my");
   }
   ~Configuration() {}
   const static unsigned int KEY_SIZE = 10;

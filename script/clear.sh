@@ -14,5 +14,6 @@ do
     fi
     host_ip=${host_address}$i
     ssh $host "tc qdisc delete dev eth0 root"
-}
+} &
 done
+wait
