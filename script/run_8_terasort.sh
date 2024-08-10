@@ -1,4 +1,3 @@
-
 echo "master mpirun start" >> /root/exp2/MergeCDC/log.out
 echo 0 > /root/exp2/MergeCDC/result_flag.out
 rm -rf /root/exp2/MergeCDC/result.out 

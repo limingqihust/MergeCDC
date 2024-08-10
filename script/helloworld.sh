@@ -18,8 +18,6 @@ host_address=192.168.0.
 # } &
 # done
 # wait
-echo "mpirun start"
-# mpirun -np 31 -allow-run-as-root --oversubscribe /root/exp2/MergeCDC/script/helloworld > /root/exp2/MergeCDC/result.out
-mpirun -np 31 -allow-run-as-root -hostfile /root/exp2/MergeCDC/hostfile /root/exp2/MergeCDC/script/helloworld > /root/exp2/MergeCDC/result.out
-echo "mpirun done"
-echo "helloworld done" >> /root/exp2/MergeCDC/helloworld.log
+echo "mpirun start" >> /root/exp2/MergeCDC/helloworld.log
+mpirun -np 31 -allow-run-as-root -hostfile /root/exp2/MergeCDC/hostfile /root/exp2/MergeCDC/script/helloworld
+echo "mpirun done" >> /root/exp2/MergeCDC/helloworld.log

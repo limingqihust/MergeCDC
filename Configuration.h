@@ -60,7 +60,7 @@ class Configuration {
     strcpy(inputPath, "/root/exp2/MergeCDC/Input/tera10G");
     strcpy(outputPath, "/root/exp2/MergeCDC/Output/tera10G");
     strcpy(partitionPath, "/root/exp2/MergeCDC/Partition/tera10G");
-    numSamples = 100000000;
+    numSamples = 10000000;
     // strcpy(inputPath, "/home/lmq/MergeCDC/Input/Input10000");
     // strcpy(outputPath, "/home/lmq/MergeCDC/Output/Output10000");
     // strcpy(partitionPath, "/home/lmq/MergeCDC/Partition/Output10000");
