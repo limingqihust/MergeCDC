@@ -26,9 +26,9 @@ class Configuration {
     // strcpy(inputPath, "./Input/Input10000");
     // strcpy(outputPath, "./Output/Output10000");
     // strcpy(partitionPath, "./Partition/Partition10000");
-    strcpy(inputPath, "./Input/tera10G");
-    strcpy(outputPath, "./Output/tera10G");
-    strcpy(partitionPath, "./Partition/tera10G");
+    strcpy(inputPath, "/root/MergeCDC/Input/tera10G");
+    strcpy(outputPath, "/root/MergeCDC/Output/tera10G");
+    strcpy(partitionPath, "/root/MergeCDC/Partition/tera10G");
     // numSamples = 10000;
     numSamples = 100000000;
   }
