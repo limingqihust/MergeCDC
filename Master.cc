@@ -103,8 +103,8 @@ void Master::run()
   
   heapSort();
   encodeAndSort();
-  // assignReduceCodedJob();
-  // assignReduceDupJob();
+  assignReduceCodedJob();
+  assignReduceDupJob();
   // COMPUTE REDUCE TIME
   MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, rcvTime, 1, MPI::DOUBLE, 0 );
   avgTime = 0;

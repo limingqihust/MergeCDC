@@ -134,8 +134,8 @@ void Worker::run()
   heapSort();
   // receiveReduceCodedJob();
   // receiveReduceDupJob();
-  // MPI::COMM_WORLD.Barrier();
-  // MPI::COMM_WORLD.Barrier();
+  MPI::COMM_WORLD.Barrier();
+  MPI::COMM_WORLD.Barrier();
   // REDUCE PHASE
   gettimeofday( &start, NULL );
   time = clock();  
