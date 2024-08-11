@@ -12,7 +12,8 @@
 #include "PartitionSampling.h"
 
 using namespace std;
-
+double dup_time = 0.0;
+double code_time = 0.0;
 void Master::run()
 {
   struct timeval total_start, total_end;
@@ -135,6 +136,10 @@ void Master::run()
   gettimeofday(&total_end,NULL);
   total_time = (total_end.tv_sec*1000000.0 + total_end.tv_usec - total_start.tv_sec*1000000.0 - total_start.tv_usec) / 1000000.0;
   std::cout << "total time: " << total_time << std::endl;
+
+  std::cout << "code_time: " << code_time << std::endl;
+  std::cout << "dup_time: " << dup_time << std::endl;
+  std::cout << "ratio: " << 1 - code_time / dup_time << std::endl;
 }
 
 
@@ -160,6 +165,7 @@ void Master::heapSort() {
   }
   time /= conf.getNumReducer();
   std::cout << "encode pre time: " << time << std::endl;
+  code_time += time;
 
 }
 
@@ -216,6 +222,7 @@ void Master::encodeAndSort() {
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   time /= conf.encodedListNum;
   std::cout << "encode time: " << time << std::endl;
+  code_time += time;
   MPI::COMM_WORLD.Barrier();
 
   std::sort(encodedList.begin(), encodedList.end(), [&](const unsigned char* keyA, const unsigned char* keyB) {
@@ -344,6 +351,7 @@ void Master::assignReduceCodedJob() {
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer coded reduce job time: " << time << std::endl;
+  code_time += time;
   MPI::COMM_WORLD.Barrier();
 }
 
@@ -400,5 +408,6 @@ void Master::assignReduceDupJob() {
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer dup reduce job time: " << time << std::endl;
+  dup_time += time;
   MPI::COMM_WORLD.Barrier();
 } 
