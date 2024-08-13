@@ -13,6 +13,8 @@
 
 using namespace std;
 
+double decode_time = 0.0;
+double transfer_time = 0.0
 void Master::run()
 {
   struct timeval total_start, total_end;
@@ -135,6 +137,16 @@ void Master::run()
   gettimeofday(&total_end,NULL);
   total_time = (total_end.tv_sec*1000000.0 + total_end.tv_usec - total_start.tv_sec*1000000.0 - total_start.tv_usec) / 1000000.0;
   std::cout << "total time: " << total_time << std::endl;
+
+  // 100000000 / 20 = 5000000
+  double size = conf.getNumSamples() / conf.getNumReducer();
+
+  // 500000000 / (20.9116 + 8.79666) / 1024 / 1024 = 16.05065925110138
+  double encode_node_bandwidth = size * (conf.getKeySize() + conf.getValueSize()) / (transfer_time + decode_time) / 1024 / 1024;
+  // 500000000 / (20.9116) / 1024 / 1024 = 22.802519090032565
+  double dupb_node_bandwidth = size * (conf.getKeySize() + conf.getValueSize()) / transfer_time / 1024 / 1024;
+  std::cout << "encode node bandwidth: " << encode_node_bandwidth << std::endl;
+  std::cout << "dup node bandwidth: " << decode_time << std::endl;
 }
 
 
@@ -242,7 +254,7 @@ void Master::receiveAndDecode() {
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   time /= conf.getNumReducer();
   std::cout << "transfer time: " << time << std::endl;
-  
+  transfer_time = time;
   // receive 
   for (int i = 1; i <= conf.getNumReducer(); i++) {
     // receive from worker[i]
@@ -272,7 +284,7 @@ void Master::receiveAndDecode() {
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "decode time: " << time << std::endl;
-
+  decode_time = time;
 
   for (auto decode_list: decode_lists) {
     for (auto key: decode_list) {
