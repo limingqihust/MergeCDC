@@ -53,7 +53,7 @@ for (( i=1; i<=32; i++ )); do
                 node="node$i"
         fi
         ssh $node "tc class add dev eth0 parent 1:0 classid 1:20 htb rate 100Mbit ceil 100Mbit burst 0; tc filter add dev eth0 parent 1:0 prior 1 protocol ip u32 match ip dst 192.168.0.23 classid 1:20"
-        ssh $node "tc class add dev eth0 parent 1:0 classid 1:21 htb rate 100Mbit ceil 10 0Mbit burst 0; tc filter add dev eth0 parent 1:0 prior 1 protocol ip u32 match ip dst 192.168.0.24 classid 1:21"
+        ssh $node "tc class add dev eth0 parent 1:0 classid 1:21 htb rate 100Mbit ceil 100Mbit burst 0; tc filter add dev eth0 parent 1:0 prior 1 protocol ip u32 match ip dst 192.168.0.24 classid 1:21"
         # ssh $node "tc class add dev eth0 parent 1:0 classid 1:22 htb rate 100Mbit ceil 100Mbit burst 0; tc filter add dev eth0 parent 1:0 prior 1 protocol ip u32 match ip dst 192.168.0.25 classid 1:22"
         # ssh $node "tc class add dev eth0 parent 1:0 classid 1:23 htb rate 100Mbit ceil 100Mbit burst 0; tc filter add dev eth0 parent 1:0 prior 1 protocol ip u32 match ip dst 192.168.0.25 classid 1:23"
         # ssh $node "tc class add dev eth0 parent 1:0 classid 1:24 htb rate 100Mbit ceil 100Mbit burst 0; tc filter add dev eth0 parent 1:0 prior 1 protocol ip u32 match ip dst 192.168.0.26 classid 1:24"
