@@ -149,6 +149,7 @@ void CodedWorker::run()
   // REDUCE PHASE
   gettimeofday(&start,NULL);
   execReduce();
+  execReduceWordCount();
   gettimeofday(&end,NULL);
   rTime = (end.tv_sec*1000000.0 + end.tv_usec -
 		 	start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
@@ -215,6 +216,7 @@ void CodedWorker::execMap()
     {
       unsigned char *buff = new unsigned char[lineSize];
       inputFile.read((char *)buff, lineSize);
+      memset(buff + conf->getWordSize(), 0, conf->getKeySize() - conf->getWordSize());
       unsigned int wid = trie->findPartition(buff);
       pc[wid]->push_back(buff);
       // inputPartitionCollection[ inputId ][ wid ]->push_back( buff );
@@ -222,6 +224,7 @@ void CodedWorker::execMap()
 
     inputFile.close();
   }
+  updateInputPartitionCollection4WordCount();
   gettimeofday(&end,NULL);
   rTime = (end.tv_sec*1000000.0 + end.tv_usec -
 		 	start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
@@ -1705,4 +1708,89 @@ TrieNode *CodedWorker::buildTrie(PartitionList *partitionList, int lower, int up
   prefix[prefixSize] = 255;
   result->setChild(255, buildTrie(partitionList, curr, upper, prefix, prefixSize + 1, maxDepth));
   return result;
+}
+
+/**
+ * typedef vector< unsigned char* > LineList;
+ * typedef unordered_map< unsigned int, LineList* > PartitionCollection;                // key = destID
+ * typedef unordered_map< unsigned int, PartitionCollection > InputPartitionCollection; // key = inputID
+ */
+void CodedWorker::updateInputPartitionCollection4WordCount() {
+  for (auto& [inputId, partitions]: inputPartitionCollection) {  // inputId: PartitionCollection
+    for (auto& [destId, keys]: partitions) {              // destId: LineList*
+      // update keys of inpudId, send to destId 
+      std::unordered_map<std::string, int> word_count;
+      for (auto key: *keys) {
+        std::string word = key2String(key, conf->getWordSize());
+        if (word_count.find(word) == word_count.end()) {
+          word_count[word] = 1;
+        } else {
+          word_count[word] += 1;
+        }
+        delete [] key;
+      }
+      keys->clear();
+      updateLineList4WordCount(word_count, keys);
+    }
+  }
+
+}
+
+
+void CodedWorker::updateLineList4WordCount(const std::unordered_map<std::string, int>& word_count, LineList* lineList) {
+  for (auto& [word, count]: word_count) {
+    unsigned char* key = new unsigned char[conf->getLineSize()];
+    for (int i = 0; i < conf->getWordSize(); i++) {
+      key[i] = (unsigned char)word[i];
+    }
+    int count_temp = count;
+    // std::cout << "[map] count: " << count_temp << std::endl;
+    for (int i = conf->getKeySize() - 1; i >= conf->getWordSize(); i--) {
+      key[i] = (unsigned char)('0' + count_temp % 10);
+      count_temp /= 10;
+    }
+    lineList->emplace_back(key);
+  }
+}
+/**
+ * count word in localList
+ */
+void CodedWorker::execReduceWordCount() {
+  std::unordered_map<std::string, int> word_count;
+  for (auto& key: localList) {
+    std::string word = key2String(key, conf->getWordSize());
+    // std::string word = std::string((char*)it, conf->getWordSize());
+    // int count = std::stoi(std::string((char*)it + conf->getWordSize(), conf->getKeySize() - conf->getWordSize()));
+    int count = key2Int(key + conf->getWordSize(), conf->getKeySize() - conf->getWordSize());
+    if (word_count.find(word) != word_count.end()) {
+      word_count[word] += count;
+    } else {
+      word_count[word] = count;
+    }
+  }
+
+  std::cout << "rank: " << rank << " reduce done" << std::endl;
+  for (const auto& [word, count]: word_count) {
+    std::cout << "word: " << word << " count: " << count << std::endl;
+  }
+
+}
+
+
+std::string CodedWorker::key2String(const unsigned char* key, unsigned int size) {
+  std::string res;
+  for (int i = 0; i < size; i++) {
+    // res += std::to_string((int)key[i]);
+    res += key[i];
+  }
+  
+  return res;
+}
+
+int CodedWorker::key2Int(const unsigned char* key, unsigned int size) {
+  int res = 0;
+  for (int i = 0; i < size; i++) {
+    res = res * 10 + (int)(key[i] - '0');
+  }
+  return res;
 }

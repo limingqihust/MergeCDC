@@ -128,6 +128,11 @@ class CodedWorker
   void writeInputPartitionCollection();
   void outputLocalList();
   TrieNode* buildTrie( PartitionList* partitionList, int lower, int upper, unsigned char* prefix, int prefixSize, int maxDepth );
+  void updateInputPartitionCollection4WordCount();
+  void updateLineList4WordCount(const std::unordered_map<std::string, int>& word_count, LineList* lineList);
+  void execReduceWordCount();
+  std::string key2String(const unsigned char* key, unsigned int size);
+  int key2Int(const unsigned char* key, unsigned int size);
 };
 
 
