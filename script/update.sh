@@ -12,11 +12,12 @@ do
     else
             host=${NODE_NAME}$i
     fi
+#     ssh $host "mkdir -p /root/wordcount-exp2/MergeCDC/script"
     # scp -r /root/exp2 $USER@$host:/root/
-    # scp -r /root/MergeCDC/script/tc.sh  $USER@$host:/root/MergeCDC/script/
+    scp -r /root/wordcount-exp2/MergeCDC/script/tc.sh  $USER@$host:/root/wordcount-exp2/MergeCDC/script/
 #     scp -r /root/exp2/MergeCDC/Input $USER@$host:/root/exp2/MergeCDC/
-    scp /root/exp2/MergeCDC/TeraSort $USER@$host:/root/exp2/MergeCDC/
-    scp /root/exp2/MergeCDC/CodedTeraSort $USER@$host:/root/exp2/MergeCDC/
+    scp /root/wordcount-exp2/MergeCDC/TeraSort $USER@$host:/root/wordcount-exp2/MergeCDC/
+    scp /root/wordcount-exp2/MergeCDC/CodedTeraSort $USER@$host:/root/wordcount-exp2/MergeCDC/
 } &
 done
 wait
@@ -32,7 +33,7 @@ do
                 host=${NODE_NAME}$i
         fi
         host_ip=${host_address}$i
-        ssh $host "tc qdisc delete dev eth0 root;chmod +x /root/exp2/MergeCDC/script/tc.sh; /root/exp2/MergeCDC/script/tc.sh ${host_ip}"
+        ssh $host "tc qdisc delete dev eth0 root;chmod +x /root/wordcount-exp2/MergeCDC/script/tc.sh; /root/wordcount-exp2/MergeCDC/script/tc.sh ${host_ip}"
 
 } &
 done

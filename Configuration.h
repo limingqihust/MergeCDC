@@ -57,25 +57,25 @@ class Configuration {
     enableInnerCode = true;
     enableNodeCombination = true;
 
-    // strcpy(inputPath, "/root/exp2/MergeCDC/Input/tera10G");
-    // strcpy(outputPath, "/root/exp2/MergeCDC/Output/tera10G");
-    // strcpy(partitionPath, "/root/exp2/MergeCDC/Partition/tera10G");
-    // numSamples = 10000000;
-    strcpy(inputPath, "/mnt/d/lmq/ceshi/MergeCDC/Input/Input10000");
-    strcpy(outputPath, "/mnt/d/lmq/ceshi/MergeCDC/Output/Output10000");
-    strcpy(partitionPath, "/mnt/d/lmq/ceshi/MergeCDC/Partition/Output10000");
-    numSamples = 10000;
+    strcpy(inputPath, "/root/exp2/MergeCDC/Input/tera10G");
+    strcpy(outputPath, "/root/exp2/MergeCDC/Output/tera10G");
+    strcpy(partitionPath, "/root/exp2/MergeCDC/Partition/tera10G");
+    numSamples = 10000000;
+    // strcpy(inputPath, "/root/exp2/MergeCDC/Input/Input10000");
+    // strcpy(outputPath, "/root/exp2/MergeCDC/Output/Output10000");
+    // strcpy(partitionPath, "/root/exp2/MergeCDC/Partition/Output10000");
+    // numSamples = 10000;
     // strcpy(inputPath, "./Input/Input10000000");
     // strcpy(outputPath, "./Output/Input10000000");
     // strcpy(partitionPath, "./Partition/Input10000000");
     // numSamples = 10000000;
-    strcpy(distributionPath, "/mnt/d/lmq/ceshi/MergeCDC/Distribution/Distribution");
-    strcpy(combinationPath, "/mnt/d/lmq/ceshi/MergeCDC/Distribution/combination_my");
+    strcpy(distributionPath, "/root/exp2/MergeCDC/Distribution/Distribution");
+    strcpy(combinationPath, "/root/exp2/MergeCDC/Distribution/combination_my");
   }
   ~Configuration() {}
   const static unsigned int KEY_SIZE = 10;
   const static unsigned int VALUE_SIZE = 90;
-  const static unsigned int WORD_SIZE = 1;
+  const static unsigned int WORD_SIZE = 2;
   const unsigned int getWordSize() const { return WORD_SIZE; }
   unsigned int getNumReducer() const { return numReducer; }
   unsigned int getNumMapper() const { return numMapper; }
