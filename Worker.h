@@ -2,7 +2,8 @@
 #define _MR_WORKER
 
 #include <unordered_map>
-
+#include <cstdlib>  
+#include <ctime>    
 #include "Configuration.h"
 #include "Common.h"
 #include "Utility.h"
@@ -27,6 +28,7 @@ class Worker
   PartitionPackData partitionRxData;
   LineList localList;
   TrieNode* trie;
+  LineList extraList4WordCount;
 
  public:
  Worker( unsigned int _rank ): rank( _rank ) {}
@@ -45,6 +47,13 @@ class Worker
   void printLineList(LineList list);
   void receiveReduceCodedJob();
   void receiveReduceDupJob();
+
+  void GenerateExtraFile4WordCount();
+  void execMapWordCount4ExtraFile();
+  void wordCount();
+  void execReduceWordCount();
+  std::string key2String(const unsigned char* key, unsigned int size);
+  int key2Int(const unsigned char* key, unsigned int size);
 };
 
 

@@ -14,7 +14,7 @@
 using namespace std;
 
 double decode_time = 0.0;
-double transfer_time = 0.0
+double transfer_time = 0.0;
 void Master::run()
 {
   struct timeval total_start, total_end;
@@ -50,6 +50,8 @@ void Master::run()
   double avgTime;
   double maxTime;
 
+  // geenrate extra file for word count
+  MPI::COMM_WORLD.Barrier();
 
   // COMPUTE MAP TIME
   MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, rcvTime, 1, MPI::DOUBLE, 0 );
@@ -146,7 +148,7 @@ void Master::run()
   // 500000000 / (20.9116) / 1024 / 1024 = 22.802519090032565
   double dupb_node_bandwidth = size * (conf.getKeySize() + conf.getValueSize()) / transfer_time / 1024 / 1024;
   std::cout << "encode node bandwidth: " << encode_node_bandwidth << std::endl;
-  std::cout << "dup node bandwidth: " << decode_time << std::endl;
+  std::cout << "dup node bandwidth: " << dupb_node_bandwidth << std::endl;
 }
 
 

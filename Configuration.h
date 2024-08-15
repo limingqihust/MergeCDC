@@ -23,19 +23,20 @@ class Configuration {
     numReducer = 20;
     numInput = numReducer;    
     
-    // strcpy(inputPath, "./Input/Input10000");
-    // strcpy(outputPath, "./Output/Output10000");
-    // strcpy(partitionPath, "./Partition/Partition10000");
-    strcpy(inputPath, "/root/MergeCDC/Input/tera10G");
-    strcpy(outputPath, "/root/MergeCDC/Output/tera10G");
-    strcpy(partitionPath, "/root/MergeCDC/Partition/tera10G");
-    // numSamples = 10000;
-    numSamples = 100000000;
+    strcpy(inputPath, "./Input/Input10000");
+    strcpy(outputPath, "./Output/Output10000");
+    strcpy(partitionPath, "./Partition/Partition10000");
+    // strcpy(inputPath, "/root/MergeCDC/Input/tera10G");
+    // strcpy(outputPath, "/root/MergeCDC/Output/tera10G");
+    // strcpy(partitionPath, "/root/MergeCDC/Partition/tera10G");
+    numSamples = 10000;
+    // numSamples = 100000000;
   }
   ~Configuration() {}
   const static unsigned int KEY_SIZE = 10;
   const static unsigned int VALUE_SIZE = 90;  
-  
+  const static unsigned int WORD_SIZE = 8;
+  const unsigned int getWordSize() const { return WORD_SIZE; }
   unsigned int getNumReducer() const { return numReducer; }
   unsigned int getNumInput() const { return numInput; }  
   const char *getInputPath() const { return inputPath; }

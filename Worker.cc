@@ -51,6 +51,9 @@ void Worker::run()
   }
 
 
+  // generate extra file for word count
+  GenerateExtraFile4WordCount();
+  MPI::COMM_WORLD.Barrier();
   // EXECUTE MAP PHASE
   clock_t time;
   struct timeval start, end;
@@ -140,6 +143,7 @@ void Worker::run()
   gettimeofday( &start, NULL );
   time = clock();  
   execReduce();
+  execReduceWordCount();
   time = clock() - time;
   rTime = double( time ) / CLOCKS_PER_SEC;    
   gettimeofday( &end, NULL );
@@ -187,10 +191,13 @@ void Worker::execMap()
   for ( unsigned long i = 0; i < numLine; i++ ) {
     unsigned char* buff = new unsigned char[ lineSize ];
     inputFile.read( ( char * ) buff, lineSize );
+    memset(buff + conf->getWordSize(), 0, conf->getKeySize() - conf->getWordSize());
+    // buff[conf->getKeySize() - 1] = '1';
     unsigned int wid = trie->findPartition( buff );
     partitionCollection.at( wid )->push_back( buff );
   }
   inputFile.close();  
+  execMapWordCount4ExtraFile();
   gettimeofday( &end, NULL );
   rTime = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   MPI::COMM_WORLD.Gather(&rTime, 1, MPI::DOUBLE, NULL, 1, MPI::DOUBLE, 0 );    
@@ -313,7 +320,7 @@ void Worker::heapSort() {
   make_heap_time = (make_heap_end.tv_sec*1000000.0 + make_heap_end.tv_usec - make_heap_start.tv_sec*1000000.0 - make_heap_start.tv_usec) / 1000000.0;
   // keys need to send to master
   int size = conf->getNumSamples() / conf->getNumReducer();
-
+  std::cout << "rank: " << rank << " make heap done, heap size: " << heap.size() << std::endl;
   for (int i = 1; i <= conf->getNumReducer(); i++) {
     if (rank == i) {
       struct timeval start, end;
@@ -435,4 +442,138 @@ void Worker::receiveReduceDupJob() {
     }
     MPI::COMM_WORLD.Barrier();
   }
+}
+
+
+
+void Worker::GenerateExtraFile4WordCount() {
+  std::srand(std::time(0));
+
+  char filePath[ MAX_FILE_PATH ];
+  sprintf( filePath, "%s_%d", conf->getInputPath(), rank - 1 );
+  ifstream inputFile( filePath, ios::in | ios::binary | ios::ate );
+  if ( !inputFile.is_open() ) {
+    cout << rank << ": Cannot open input file " << conf->getInputPath() << endl;
+    assert( false );
+  }
+
+  char outputFilePath[ MAX_FILE_PATH ];
+  sprintf(outputFilePath, "%s_%d_extra", conf->getInputPath(), rank - 1 );
+  std::ofstream outputFile(outputFilePath, std::ios::out | std::ios::binary);    
+  if (!outputFile.is_open()) {
+    cout << rank << ": Cannot open output file " << outputFilePath << endl;
+    assert(false);
+  }
+
+
+  int fileSize = inputFile.tellg();
+  unsigned long int lineSize = conf->getLineSize();
+  unsigned long int numLine = fileSize / lineSize;
+  inputFile.seekg( 0, ios::beg );
+
+  for ( unsigned long i = 0; i < numLine; i++ ) {
+    unsigned char* buff = new unsigned char[ lineSize ];
+    inputFile.read( ( char * ) buff, lineSize );
+    if (std::rand() % 100 < 10) {
+      outputFile.write((char*)buff, lineSize);
+    }
+    delete [] buff;
+  }
+  inputFile.close();  
+  outputFile.close();
+}
+
+
+void Worker::execMapWordCount4ExtraFile() {
+
+  char filePath[ MAX_FILE_PATH ];
+  sprintf( filePath, "%s_%d_extra", conf->getInputPath(), rank - 1 );
+  ifstream inputFile( filePath, ios::in | ios::binary | ios::ate );
+  if ( !inputFile.is_open() ) {
+    cout << rank << ": Cannot open input file " << conf->getInputPath() << endl;
+    assert( false );
+  }
+
+  int fileSize = inputFile.tellg();
+  unsigned long int lineSize = conf->getLineSize();
+  unsigned long int numLine = fileSize / lineSize;
+  inputFile.seekg( 0, ios::beg );
+
+  std::unordered_map<std::string, int> word_count;
+  for ( unsigned long i = 0; i < numLine; i++ ) {
+    unsigned char* buff = new unsigned char[ lineSize ];
+    inputFile.read( ( char * ) buff, lineSize );
+    std::string word = key2String(buff, conf->getWordSize());
+    if (word_count.find(word) == word_count.end()) {
+      word_count[word] = 1;
+    } else {
+      word_count[word] += 1;
+    }
+    delete [] buff;
+  }
+  inputFile.close();  
+
+  for (auto& [destId, keys]: partitionCollection) {
+    for (auto& key: *keys) {
+      memset(key + conf->getWordSize(), '0', conf->getKeySize() - conf->getWordSize());
+      std::string word = key2String(key, conf->getWordSize());
+      int count = 1;
+      if (word_count.find(word) != word_count.end()) {
+        count += word_count[word];
+      } 
+      for (int i = conf->getKeySize() - 1; i >= conf->getWordSize(); i--) {
+        key[i] = (unsigned char)('0' + count % 10);
+        count /= 10;
+      }
+    }
+  }
+}
+
+
+void Worker::wordCount() {
+  std::unordered_map<std::string, int> word_count;
+
+}
+
+/**
+ * count word in localList
+ */
+void Worker::execReduceWordCount() {
+  std::unordered_map<std::string, int> word_count;
+  for (auto& key: localList) {
+    std::string word = key2String(key, conf->getWordSize());
+    // std::string word = std::string((char*)it, conf->getWordSize());
+    // int count = std::stoi(std::string((char*)it + conf->getWordSize(), conf->getKeySize() - conf->getWordSize()));
+    int count = key2Int(key + conf->getWordSize(), conf->getKeySize() - conf->getWordSize());
+    if (word_count.find(word) != word_count.end()) {
+      word_count[word] += count;
+    } else {
+      word_count[word] = count;
+    }
+  }
+
+  // std::cout << "rank: " << rank << " reduce done" << std::endl;
+  // for (const auto& [word, count]: word_count) {
+  //   std::cout << "word: " << word << " count: " << count << std::endl;
+  // }
+
+}
+
+
+std::string Worker::key2String(const unsigned char* key, unsigned int size) {
+  std::string res;
+  for (int i = 0; i < size; i++) {
+    // res += std::to_string((int)key[i]);
+    res += key[i];
+  }
+
+  return res;
+}
+
+int Worker::key2Int(const unsigned char* key, unsigned int size) {
+  int res = 0;
+  for (int i = 0; i < size; i++) {
+    res = res * 10 + (int)(key[i] - '0');
+  }
+  return res;
 }

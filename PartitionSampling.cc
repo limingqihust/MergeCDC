@@ -49,7 +49,8 @@ PartitionList* PartitionSampling::createPartitions()
       cout << "Cannot allocate memory to sample keys.\n";
       assert( false );
     }
-    inputFile.read( (char *) keyBuff, keySize );            
+    inputFile.read( (char *) keyBuff, keySize );    
+    memset(keyBuff + conf->getWordSize(), 0, conf->getKeySize() - conf->getWordSize());        
     keyBuff[ keySize ] = '\0';
     keyList.push_back( keyBuff );
     inputFile.seekg( conf->getValueSize() + gapSkip , ios_base::cur );
