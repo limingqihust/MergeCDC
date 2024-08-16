@@ -32,7 +32,9 @@ do
     # scp /root/MergeCDC/hostfile $USER@$host:/root/MergeCDC/
     # scp -r /root/MergeCDC $USER@$host:/root/
     # scp -r /root/MergeCDC/script/tc.sh  $USER@$host:/root/MergeCDC/script/
-    scp /root/MergeCDC/TeraSort $USER@$host:/root/MergeCDC/
+    ssh $host "mkdir -p /root/wordcount-exp1/MergeCDC/script"
+    scp -r /root/wordcount-exp1/MergeCDC/script/tc.sh $USER@$host:/root/wordcount-exp1/MergeCDC/script/
+    scp /root/wordcount-exp1/MergeCDC/TeraSort $USER@$host:/root/wordcount-exp1/MergeCDC/
 } &
 done
 wait
@@ -48,7 +50,7 @@ do
         host=${NODE_NAME}$i
     fi
     host_ip=${host_address}$i
-    ssh $host "tc qdisc delete dev eth0 root;chmod +x /root/MergeCDC/script/tc.sh; /root/MergeCDC/script/tc.sh ${host_ip}"
+    ssh $host "tc qdisc delete dev eth0 root;chmod +x /root/wordcount-exp1/MergeCDC/script/tc.sh; /root/wordcount-exp1/MergeCDC/script/tc.sh ${host_ip}"
 
 }
 done

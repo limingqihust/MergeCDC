@@ -320,7 +320,7 @@ void Worker::heapSort() {
   make_heap_time = (make_heap_end.tv_sec*1000000.0 + make_heap_end.tv_usec - make_heap_start.tv_sec*1000000.0 - make_heap_start.tv_usec) / 1000000.0;
   // keys need to send to master
   int size = conf->getNumSamples() / conf->getNumReducer();
-  std::cout << "rank: " << rank << " make heap done, heap size: " << heap.size() << std::endl;
+  // std::cout << "rank: " << rank << " make heap done, heap size: " << heap.size() << std::endl;
   for (int i = 1; i <= conf->getNumReducer(); i++) {
     if (rank == i) {
       struct timeval start, end;
