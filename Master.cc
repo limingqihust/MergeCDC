@@ -58,8 +58,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": MAP     | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;
+  // cout << rank << ": MAP     | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;
 
 
   // COMPUTE PACKING TIME
@@ -70,8 +70,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": PACK    | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;  
+  // cout << rank << ": PACK    | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;  
 
   
   // COMPUTE SHUFFLE TIME
@@ -85,8 +85,8 @@ void Master::run()
     MPI::COMM_WORLD.Recv( &txRate, 1, MPI::DOUBLE, i, 0 );
     avgRate += txRate;
   }
-  cout << rank << ": SHUFFLE | Sum = " << setw(10) << avgTime
-       << "   Rate = " << setw(10) << avgRate/numWorker << " Mbps" << endl;  
+  // cout << rank << ": SHUFFLE | Sum = " << setw(10) << avgTime
+  //      << "   Rate = " << setw(10) << avgRate/numWorker << " Mbps" << endl;  
 
 
   // COMPUTE UNPACK TIME
@@ -97,8 +97,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": UNPACK  | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;
+  // cout << rank << ": UNPACK  | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;
   
   
   
@@ -114,8 +114,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": REDUCE  | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;      
+  // cout << rank << ": REDUCE  | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;      
   
   receiveAndDecode();
   // CLEAN UP MEMORY
@@ -136,9 +136,9 @@ void Master::run()
   gettimeofday(&total_end,NULL);
   total_time = (total_end.tv_sec*1000000.0 + total_end.tv_usec - total_start.tv_sec*1000000.0 - total_start.tv_usec) / 1000000.0;
   std::cout << "total time: " << total_time << std::endl;
-
-  std::cout << "code_time: " << code_time << std::endl;
-  std::cout << "dup_time: " << dup_time << std::endl;
+  std::cout << "total size(byte):" << conf.getNumSamples() * conf.getLineSize() << std::endl;
+  std::cout << "code_time(s): " << code_time << std::endl;
+  std::cout << "dup_time(s): " << dup_time << std::endl;
   std::cout << "ratio: " << 1 - code_time / dup_time << std::endl;
 }
 
