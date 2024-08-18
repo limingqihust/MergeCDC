@@ -15,6 +15,8 @@ using namespace std;
 
 double decode_time = 0.0;
 double transfer_time = 0.0;
+double dup_time = 0.0;
+double code_time = 0.0;
 void Master::run()
 {
   struct timeval total_start, total_end;
@@ -61,8 +63,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": MAP     | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;
+  // cout << rank << ": MAP     | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;
 
 
   // COMPUTE PACKING TIME
@@ -73,8 +75,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": PACK    | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;  
+  // cout << rank << ": PACK    | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;  
 
   
   // COMPUTE SHUFFLE TIME
@@ -88,8 +90,8 @@ void Master::run()
     MPI::COMM_WORLD.Recv( &txRate, 1, MPI::DOUBLE, i, 0 );
     avgRate += txRate;
   }
-  cout << rank << ": SHUFFLE | Sum = " << setw(10) << avgTime
-       << "   Rate = " << setw(10) << avgRate/numWorker << " Mbps" << endl;  
+  // cout << rank << ": SHUFFLE | Sum = " << setw(10) << avgTime
+  //      << "   Rate = " << setw(10) << avgRate/numWorker << " Mbps" << endl;  
 
 
   // COMPUTE UNPACK TIME
@@ -100,8 +102,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": UNPACK  | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;
+  // cout << rank << ": UNPACK  | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;
   
   
   
@@ -117,8 +119,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": REDUCE  | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;      
+  // cout << rank << ": REDUCE  | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;      
   
   receiveAndDecode();
   // CLEAN UP MEMORY
@@ -149,6 +151,10 @@ void Master::run()
   double dupb_node_bandwidth = size * (conf.getKeySize() + conf.getValueSize()) / transfer_time / 1024 / 1024;
   std::cout << "encode node bandwidth: " << encode_node_bandwidth << std::endl;
   std::cout << "dup node bandwidth: " << dupb_node_bandwidth << std::endl;
+  std::cout << "total size(byte): " << conf.getNumSamples() * conf.getLineSize() << std::endl;
+  std::cout << "code_time(s): " << code_time << std::endl;
+  std::cout << "dup_time(s): " << dup_time << std::endl;
+  std::cout << "ratio: " << 1 - code_time / dup_time << std::endl;
 }
 
 
@@ -174,6 +180,7 @@ void Master::heapSort() {
   }
   time /= conf.getNumReducer();
   std::cout << "encode pre time: " << time << std::endl;
+  code_time += time;
 
 }
 
@@ -230,6 +237,7 @@ void Master::encodeAndSort() {
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   time /= conf.encodedListNum;
   std::cout << "encode time: " << time << std::endl;
+  code_time += time;
   MPI::COMM_WORLD.Barrier();
 
   std::sort(encodedList.begin(), encodedList.end(), [&](const unsigned char* keyA, const unsigned char* keyB) {
@@ -358,6 +366,7 @@ void Master::assignReduceCodedJob() {
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer coded reduce job time: " << time << std::endl;
+  code_time += time;
   MPI::COMM_WORLD.Barrier();
 }
 
@@ -414,5 +423,6 @@ void Master::assignReduceDupJob() {
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer dup reduce job time: " << time << std::endl;
+  dup_time += time;
   MPI::COMM_WORLD.Barrier();
 } 
