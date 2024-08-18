@@ -2,6 +2,6 @@
     "node_num": 32,
     "file_distribution": "/home/lmq/new_GUI/config/lmq/Distribution",
     "node_combination": "/home/lmq/new_GUI/config/lmq/combination_my",
-    "bandwidth_ratio": "10",
-    "infiniband": false
+    "bandwidth_ratio": "50",
+    "infiniband": true
 }

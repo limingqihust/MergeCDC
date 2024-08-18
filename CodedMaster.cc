@@ -98,7 +98,10 @@ void CodedMaster::run()
     MPI_Recv( &tx, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
     avgtx += tx;
   }
-  cout << "SHUFFLE " << avgTime/numWorker << " " << maxTime << " " << avgtx << endl;
+  cout << "SHUFFLE " << avgTime << " " << maxTime << " " << avgtx << endl;
+  double size = conf.getLineSize() * conf.getNumSamples();
+  std::cout << "SHUFFLE DATA SIZE(byte): " << conf.getLineSize() * conf.getNumSamples() << std::endl;
+  std::cout << "SHUFFLE RATIO(byte/s):" << size / avgTime << std::endl;
   avgTime = 0;
   maxTime = 0;
   avgtx = 0;

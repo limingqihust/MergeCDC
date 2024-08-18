@@ -15,11 +15,13 @@ with open(filename) as file:
         exec_cmd = "bash /root/exp2/MergeCDC/script/update_infiniband.sh"
         ret = subprocess.getstatusoutput(exec_cmd)
         # set bandwidth ratio
+        print(f"[INFO] update infiniband bandwidth with ratio {bandwidth_ratio}")
         exec_cmd = f"bash /root/exp2/MergeCDC/script/update_infiniband_bandwidth_ratio_{bandwidth_ratio}.sh"
         ret = subprocess.getstatusoutput(exec_cmd)
         print(ret)
 
     else:
+        print(f"[INFO] update bandwidth with ratio {bandwidth_ratio}")
         exec_cmd = f"bash /root/exp2/MergeCDC/script/update_bandwidth_ratio_{bandwidth_ratio}.sh"
         ret = subprocess.getstatusoutput(exec_cmd)
         print(ret)

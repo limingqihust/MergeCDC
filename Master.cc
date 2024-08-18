@@ -81,8 +81,10 @@ void Master::run()
     MPI_Recv(&tx, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);    
     avgTx += tx;
   }
-  cout << "SHUFFLE " << avgTime/numWorker << " " << maxTime << " " << avgTx << endl;
-
+  cout << "SHUFFLE " << avgTime << " " << maxTime << " " << avgTx << endl;
+  double size = conf.getLineSize() * conf.getNumSamples();
+  std::cout << "SHUFFLE DATA SIZE(byte): " << conf.getLineSize() * conf.getNumSamples() << std::endl;
+  std::cout << "SHUFFLE RATIO(byte/s):" << size / avgTime << std::endl;
 
   // COMPUTE UNPACK TIME
   MPI_Gather(&rTime, 1, MPI_DOUBLE, rcvTime, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
