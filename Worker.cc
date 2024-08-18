@@ -135,10 +135,10 @@ void Worker::run()
   MPI::COMM_WORLD.Gather( &rTime, 1, MPI::DOUBLE, NULL, 1, MPI::DOUBLE, 0 );      
 
   heapSort();
-  // receiveReduceCodedJob();
-  // receiveReduceDupJob();
-  MPI::COMM_WORLD.Barrier();
-  MPI::COMM_WORLD.Barrier();
+  receiveReduceCodedJob();
+  receiveReduceDupJob();
+  // MPI::COMM_WORLD.Barrier();
+  // MPI::COMM_WORLD.Barrier();
   // REDUCE PHASE
   gettimeofday( &start, NULL );
   time = clock();  
@@ -399,23 +399,26 @@ void Worker::receiveReduceCodedJob() {
   int size = conf->getNumSamples() / conf->getNumReducer();
   for (int i = 1; i <= conf->getNumReducer(); i++) {
     if (i == rank) {
-      unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
-      MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+      unsigned char* buffer = new unsigned char[size * conf->getLineSize()];
+      MPI::COMM_WORLD.Recv(buffer, size * conf->getLineSize(), MPI::UNSIGNED_CHAR, 0, 0);
+      // std::cout << "rank: " << rank << " receive from master, size(byte): " << size * conf->getLineSize() << std::endl;
       delete [] buffer;
     }
     MPI::COMM_WORLD.Barrier();
   }
 
   if (rank == 1) {
-    unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
-    MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+    unsigned char* buffer = new unsigned char[size * conf->getLineSize()];
+    MPI::COMM_WORLD.Recv(buffer, size * conf->getLineSize(), MPI::UNSIGNED_CHAR, 0, 0);
+    // std::cout << "rank: " << rank << " receive from master, size(byte): " << size * conf->getLineSize() << std::endl;
     delete [] buffer;
   }
   MPI::COMM_WORLD.Barrier();
 
   if (rank == 2) {
-    unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
-    MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+    unsigned char* buffer = new unsigned char[size * conf->getLineSize()];
+    MPI::COMM_WORLD.Recv(buffer, size * conf->getLineSize(), MPI::UNSIGNED_CHAR, 0, 0);
+    // std::cout << "rank: " << rank << " receive from master, size(byte): " << size * conf->getLineSize() << std::endl;
     delete [] buffer;
   }
   MPI::COMM_WORLD.Barrier();
@@ -427,8 +430,9 @@ void Worker::receiveReduceDupJob() {
   int size = conf->getNumSamples() / conf->getNumReducer();
   for (int i = 1; i <= conf->getNumReducer(); i++) {
     if (i == rank) {
-      unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
-      MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+      unsigned char* buffer = new unsigned char[size * conf->getLineSize()];
+      MPI::COMM_WORLD.Recv(buffer, size * conf->getLineSize(), MPI::UNSIGNED_CHAR, 0, 0);
+      // std::cout << "rank: " << rank << " receive from master, size(byte): " << size * conf->getLineSize() << std::endl;
       delete [] buffer;
     }
     MPI::COMM_WORLD.Barrier();
@@ -436,8 +440,9 @@ void Worker::receiveReduceDupJob() {
 
   for (int i = 1; i <= conf->getNumReducer(); i++) {
     if (i == rank) {
-      unsigned char* buffer = new unsigned char[size * conf->getKeySize()];
-      MPI::COMM_WORLD.Recv(buffer, size * conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0);
+      unsigned char* buffer = new unsigned char[size * conf->getLineSize()];
+      MPI::COMM_WORLD.Recv(buffer, size * conf->getLineSize(), MPI::UNSIGNED_CHAR, 0, 0);
+      // std::cout << "rank: " << rank << " receive from master, size(byte): " << size * conf->getLineSize() << std::endl;
       delete [] buffer;
     }
     MPI::COMM_WORLD.Barrier();
