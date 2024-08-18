@@ -289,125 +289,149 @@ void Master::receiveAndDecode() {
 }
 
 void Master::assignReduceCodedJob() {
-  // struct timeval start, end;
-  // double time;
-  // MPI::COMM_WORLD.Barrier();
-  // gettimeofday(&start, NULL);
-  // for (int i = 1; i <= conf.getNumReducer(); i++) {
-  //   int size = heaps[i].size();
-  //   unsigned char* buffer = new unsigned char[size * conf.getKeySize()];
-  //   MPI::COMM_WORLD.Send(buffer, size * conf.getKeySize(), MPI::UNSIGNED_CHAR, i, 0 );
-  //   delete [] buffer;
-  //   MPI::COMM_WORLD.Barrier();
-  // }
-  
-  // int size = encodedList.size();
-  // unsigned char* buffer = new unsigned char[size * conf.getKeySize()];
-  // MPI::COMM_WORLD.Send(buffer, size * conf.getKeySize(), MPI::UNSIGNED_CHAR, 1, 0 );
-  // delete [] buffer;
-  // MPI::COMM_WORLD.Barrier();
-
-  // size = encodedList2.size();
-  // buffer = new unsigned char[size * conf.getKeySize()];
-  // MPI::COMM_WORLD.Send(buffer, size * conf.getKeySize(), MPI::UNSIGNED_CHAR, 2, 0 );
-  // delete [] buffer;
-  // MPI::COMM_WORLD.Barrier();
-  // gettimeofday(&end, NULL);
-  // time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
-  // std::cout << "transfer coded reduce job time: " << time << std::endl;
   struct timeval start, end;
   double time;
+  MPI::COMM_WORLD.Barrier();
   gettimeofday(&start, NULL);
+  // send origin data to workers
   for (int i = 1; i <= conf.getNumReducer(); i++) {
-    pid_t pid = fork();
-    if (pid == 0) {
-      std::string filename = "/root/MergeCDC/Input/tera10G_" + std::to_string(i - 1);
-      std::string dst = "root@192.168.0." + std::to_string(i + 1) + ":/root/";
-      char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
-      execvp(args[0], args);
-    } else {
-      wait(NULL);
+    int size = heaps[i - 1].size();
+    // std::cout << "send size: " << size * conf.getLineSize() << " to node: " << i << std::endl;
+    unsigned char* buffer = new unsigned char[size * conf.getLineSize()];
+    for (int j = 0; j < size; j++) {
+      memcpy(buffer + j * conf.getLineSize(), heaps[i - 1][j], conf.getLineSize());
     }
+    MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, i, 0 );
+    delete [] buffer;
+    MPI::COMM_WORLD.Barrier();
   }
-  pid_t pid = fork();
-  if (pid == 0) {
-    std::string filename = "/root/MergeCDC/Input/tera10G_0";
-    std::string dst = "root@192.168.0.2:/root/";
-    char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
-    execvp(args[0], args);
-  } else {
-    wait(NULL);
+  
+  // send encoded data0 to worker
+  int size = encodedList.size();
+  unsigned char* buffer = new unsigned char[size * conf.getLineSize()];
+  // std::cout << "send size: " << size * conf.getLineSize() << " to node 1" << std::endl;
+  for (int j = 0; j < size; j++) {
+    memcpy(buffer + j * conf.getLineSize(), encodedList[j], conf.getLineSize());
   }
-  pid = fork();
-  if (pid == 0) {
-    std::string filename = "/root/MergeCDC/Input/tera10G_1";
-    std::string dst = "root@192.168.0.3:/root/";
-    char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
-    execvp(args[0], args);
-  } else {
-    wait(NULL);
-  }
+  MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, 1, 0 );
+  delete [] buffer;
+  MPI::COMM_WORLD.Barrier();
 
+  // send encoded data1 to worker
+  size = encodedList2.size();
+  buffer = new unsigned char[size * conf.getLineSize()];
+  // std::cout << "send size: " << size * conf.getLineSize() << " to node 2" << std::endl;
+  for (int j = 0; j < size; j++) {
+    memcpy(buffer + j * conf.getLineSize(), encodedList[j], conf.getLineSize());
+  }
+  MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, 2, 0 );
+  delete [] buffer;
+  MPI::COMM_WORLD.Barrier();
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer coded reduce job time: " << time << std::endl;
-  code_time += time;
-  MPI::COMM_WORLD.Barrier();
+  // struct timeval start, end;
+  // double time;
+  // gettimeofday(&start, NULL);
+  // for (int i = 1; i <= conf.getNumReducer(); i++) {
+  //   pid_t pid = fork();
+  //   if (pid == 0) {
+  //     std::string filename = "/root/MergeCDC/Input/tera10G_" + std::to_string(i - 1);
+  //     std::string dst = "root@192.168.0." + std::to_string(i + 1) + ":/root/";
+  //     char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
+  //     execvp(args[0], args);
+  //   } else {
+  //     wait(NULL);
+  //   }
+  // }
+  // pid_t pid = fork();
+  // if (pid == 0) {
+  //   std::string filename = "/root/MergeCDC/Input/tera10G_0";
+  //   std::string dst = "root@192.168.0.2:/root/";
+  //   char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
+  //   execvp(args[0], args);
+  // } else {
+  //   wait(NULL);
+  // }
+  // pid = fork();
+  // if (pid == 0) {
+  //   std::string filename = "/root/MergeCDC/Input/tera10G_1";
+  //   std::string dst = "root@192.168.0.3:/root/";
+  //   char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
+  //   execvp(args[0], args);
+  // } else {
+  //   wait(NULL);
+  // }
+
+  // gettimeofday(&end, NULL);
+  // time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+  // std::cout << "transfer coded reduce job time: " << time << std::endl;
+  // code_time += time;
+  // MPI::COMM_WORLD.Barrier();
 }
 
 void Master::assignReduceDupJob() {
-  // struct timeval start, end;
-  // double time;
-  // MPI::COMM_WORLD.Barrier();
-  // gettimeofday(&start, NULL);
-  // for (int i = 1; i <= conf.getNumReducer(); i++) {
-  //   int size = heaps[i].size();
-  //   unsigned char* buffer = new unsigned char[size * conf.getKeySize()];
-  //   MPI::COMM_WORLD.Send(buffer, size * conf.getKeySize(), MPI::UNSIGNED_CHAR, i, 0 );
-  //   delete [] buffer;
-  //   MPI::COMM_WORLD.Barrier();
-  // }
-  
-  // for (int i = 1; i <= conf.getNumReducer(); i++) {
-  //   int size = heaps[i].size();
-  //   unsigned char* buffer = new unsigned char[size * conf.getKeySize()];
-  //   MPI::COMM_WORLD.Send(buffer, size * conf.getKeySize(), MPI::UNSIGNED_CHAR, i, 0 );
-  //   delete [] buffer;
-  //   MPI::COMM_WORLD.Barrier();
-  // }
-  // gettimeofday(&end, NULL);
-  // time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
-  // std::cout << "transfer dup reduce job time: " << time << std::endl;
-
   struct timeval start, end;
   double time;
+  MPI::COMM_WORLD.Barrier();
   gettimeofday(&start, NULL);
   for (int i = 1; i <= conf.getNumReducer(); i++) {
-    pid_t pid = fork();
-    if (pid == 0) {
-      std::string filename = "/root/MergeCDC/Input/tera10G_" + std::to_string(i - 1);
-      std::string dst = "root@192.168.0." + std::to_string(i + 1) + ":/root/";
-      char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
-      execvp(args[0], args);
-    } else {
-      wait(NULL);
-    }
-  }
+    int size = heaps[i - 1].size();
+    unsigned char* buffer = new unsigned char[size * conf.getLineSize()];
+    // std::cout << "send size: " << size * conf.getLineSize() << " to node: " << i << std::endl;
 
-  for (int i = 1; i <= conf.getNumReducer(); i++) {
-    pid_t pid = fork();
-    if (pid == 0) {
-      std::string filename = "/root/MergeCDC/Input/tera10G_" + std::to_string(i - 1);
-      std::string dst = "root@192.168.0." + std::to_string(i + 1) + ":/root/";
-      char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
-      execvp(args[0], args);
-    } else {
-      wait(NULL);
+    for (int j = 0; j < size; j++) {
+      memcpy(buffer + j * conf.getKeySize(), heaps[i - 1][j], conf.getKeySize());
     }
+    MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, i, 0 );
+    delete [] buffer;
+    MPI::COMM_WORLD.Barrier();
+  }
+  
+  for (int i = 1; i <= conf.getNumReducer(); i++) {
+    int size = heaps[i - 1].size();
+    unsigned char* buffer = new unsigned char[size * conf.getLineSize()];
+    // std::cout << "send size: " << size * conf.getLineSize() << " to node: " << i << std::endl;
+    for (int j = 0; j < size; j++) {
+      memcpy(buffer + j * conf.getKeySize(), heaps[i - 1][j], conf.getKeySize());
+    }
+    MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, i, 0 );
+    delete [] buffer;
+    MPI::COMM_WORLD.Barrier();
   }
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer dup reduce job time: " << time << std::endl;
-  dup_time += time;
-  MPI::COMM_WORLD.Barrier();
+
+  // struct timeval start, end;
+  // double time;
+  // gettimeofday(&start, NULL);
+  // for (int i = 1; i <= conf.getNumReducer(); i++) {
+  //   pid_t pid = fork();
+  //   if (pid == 0) {
+  //     std::string filename = "/root/MergeCDC/Input/tera10G_" + std::to_string(i - 1);
+  //     std::string dst = "root@192.168.0." + std::to_string(i + 1) + ":/root/";
+  //     char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
+  //     execvp(args[0], args);
+  //   } else {
+  //     wait(NULL);
+  //   }
+  // }
+
+  // for (int i = 1; i <= conf.getNumReducer(); i++) {
+  //   pid_t pid = fork();
+  //   if (pid == 0) {
+  //     std::string filename = "/root/MergeCDC/Input/tera10G_" + std::to_string(i - 1);
+  //     std::string dst = "root@192.168.0." + std::to_string(i + 1) + ":/root/";
+  //     char * args[] = {(char*)"scp", (char*)filename.c_str(), (char*)dst.c_str(), NULL};
+  //     execvp(args[0], args);
+  //   } else {
+  //     wait(NULL);
+  //   }
+  // }
+  // gettimeofday(&end, NULL);
+  // time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+  // std::cout << "transfer dup reduce job time: " << time << std::endl;
+  // dup_time += time;
+  // MPI::COMM_WORLD.Barrier();
 } 
