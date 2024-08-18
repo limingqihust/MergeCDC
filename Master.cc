@@ -15,8 +15,13 @@ using namespace std;
 
 double decode_time = 0.0;
 double transfer_time = 0.0;
+double encode_total_time = 0.0;
 void Master::run()
 {
+  std::cout << "origin cpu num: 20" << std::endl;
+  std::cout << "extra cpu num: 22" << std::endl;
+  std::cout << "origin memory num: 20" << std::endl;
+  std::cout << "extra memory num: 22" << std::endl;
   struct timeval total_start, total_end;
   double total_time;
   gettimeofday(&total_start,NULL);
@@ -61,8 +66,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": MAP     | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;
+  // cout << rank << ": MAP     | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;
 
 
   // COMPUTE PACKING TIME
@@ -73,8 +78,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": PACK    | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;  
+  // cout << rank << ": PACK    | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;  
 
   
   // COMPUTE SHUFFLE TIME
@@ -88,8 +93,8 @@ void Master::run()
     MPI::COMM_WORLD.Recv( &txRate, 1, MPI::DOUBLE, i, 0 );
     avgRate += txRate;
   }
-  cout << rank << ": SHUFFLE | Sum = " << setw(10) << avgTime
-       << "   Rate = " << setw(10) << avgRate/numWorker << " Mbps" << endl;  
+  // cout << rank << ": SHUFFLE | Sum = " << setw(10) << avgTime
+  //      << "   Rate = " << setw(10) << avgRate/numWorker << " Mbps" << endl;  
 
 
   // COMPUTE UNPACK TIME
@@ -100,8 +105,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": UNPACK  | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;
+  // cout << rank << ": UNPACK  | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;
   
   
   
@@ -117,8 +122,8 @@ void Master::run()
     avgTime += rcvTime[ i ];
     maxTime = max( maxTime, rcvTime[ i ] );
   }
-  cout << rank << ": REDUCE  | Avg = " << setw(10) << avgTime/numWorker
-       << "   Max = " << setw(10) << maxTime << endl;      
+  // cout << rank << ": REDUCE  | Avg = " << setw(10) << avgTime/numWorker
+  //      << "   Max = " << setw(10) << maxTime << endl;      
   
   receiveAndDecode();
   // CLEAN UP MEMORY
@@ -138,8 +143,8 @@ void Master::run()
   }
   gettimeofday(&total_end,NULL);
   total_time = (total_end.tv_sec*1000000.0 + total_end.tv_usec - total_start.tv_sec*1000000.0 - total_start.tv_usec) / 1000000.0;
-  std::cout << "total time: " << total_time << std::endl;
-
+  std::cout << "total time(s): " << total_time << std::endl;
+  std::cout << "loss: " << encode_total_time / total_time << std::endl;
   // 100000000 / 20 = 5000000
   double size = conf.getNumSamples() / conf.getNumReducer();
 
@@ -147,8 +152,9 @@ void Master::run()
   double encode_node_bandwidth = size * (conf.getKeySize() + conf.getValueSize()) / (transfer_time + decode_time) / 1024 / 1024;
   // 500000000 / (20.9116) / 1024 / 1024 = 22.802519090032565
   double dupb_node_bandwidth = size * (conf.getKeySize() + conf.getValueSize()) / transfer_time / 1024 / 1024;
-  std::cout << "encode node bandwidth: " << encode_node_bandwidth << std::endl;
-  std::cout << "dup node bandwidth: " << dupb_node_bandwidth << std::endl;
+  std::cout << "data size per chunk(byte): " << size * conf.getLineSize() << std::endl;
+  // std::cout << "encode node bandwidth: " << encode_node_bandwidth << std::endl;
+  // std::cout << "dup node bandwidth: " << dupb_node_bandwidth << std::endl;
 }
 
 
@@ -174,6 +180,7 @@ void Master::heapSort() {
   }
   time /= conf.getNumReducer();
   std::cout << "encode pre time: " << time << std::endl;
+  encode_total_time += time;
 
 }
 
@@ -230,6 +237,7 @@ void Master::encodeAndSort() {
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   time /= conf.encodedListNum;
   std::cout << "encode time: " << time << std::endl;
+  encode_total_time += time;
   MPI::COMM_WORLD.Barrier();
 
   std::sort(encodedList.begin(), encodedList.end(), [&](const unsigned char* keyA, const unsigned char* keyB) {
@@ -245,6 +253,8 @@ void Master::receiveAndDecode() {
   int size = conf.getNumSamples() / conf.getNumReducer();
   unsigned char* buffer = new unsigned char[size * (conf.getKeySize() + conf.getValueSize())];
   MPI::COMM_WORLD.Barrier();
+
+  // 接收多模冗余的计算结果
   gettimeofday(&start,NULL);
   for (int i = 1; i <= conf.getNumReducer(); i++) {
     MPI::COMM_WORLD.Recv(buffer, size * (conf.getKeySize() + conf.getValueSize()), MPI::UNSIGNED_CHAR, i, 0);
@@ -271,7 +281,7 @@ void Master::receiveAndDecode() {
   }
 
 
-
+  // 经过解码获得结果
   // decode
   gettimeofday(&start,NULL);
   for (int i = 0; i < conf.getNumReducer() - 1; i++) {
