@@ -330,6 +330,8 @@ void Master::assignReduceCodedJob() {
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer coded reduce job time: " << time << std::endl;
+  code_time += time;
+
   // struct timeval start, end;
   // double time;
   // gettimeofday(&start, NULL);
@@ -402,6 +404,7 @@ void Master::assignReduceDupJob() {
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer dup reduce job time: " << time << std::endl;
+  dup_time += time;
 
   // struct timeval start, end;
   // double time;
