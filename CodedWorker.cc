@@ -1769,10 +1769,10 @@ void CodedWorker::execReduceWordCount() {
     }
   }
 
-  std::cout << "rank: " << rank << " reduce done" << std::endl;
-  for (const auto& [word, count]: word_count) {
-    std::cout << "word: " << word << " count: " << count << std::endl;
-  }
+  // std::cout << "rank: " << rank << " reduce done" << std::endl;
+  // for (const auto& [word, count]: word_count) {
+  //   std::cout << "word: " << word << " count: " << count << std::endl;
+  // }
 
 }
 
