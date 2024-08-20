@@ -261,30 +261,40 @@ void Master::receiveAndDecode() {
   transfer_time = time;
   
   // receive result of code compution
-  gettimeofday(&start,NULL);
+  time = 0.0;
   for (int i = 1; i <= conf.getNumReducer(); i++) {
+    gettimeofday(&start,NULL);
     MPI::COMM_WORLD.Recv(buffer, size * (conf.getKeySize() + conf.getValueSize()), MPI::UNSIGNED_CHAR, i, 0);
     MPI::COMM_WORLD.Barrier();
-  }
-  gettimeofday(&end, NULL);
-  delete [] buffer;
-
-  time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
-  time /= conf.getNumReducer();
-  // std::cout << "transfer time: " << time << std::endl;
-  transfer_time = time;
-
-  for (int i = 1; i <= conf.getNumReducer(); i++) {
-    // receive from worker[i]
+    gettimeofday(&end, NULL);
+    time += (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+    // unpack
     LineList decode_list;
     for (int j = 0; j < size; j++) {
       unsigned char* key = new unsigned char[conf.getKeySize()];
-      MPI::COMM_WORLD.Recv(key, conf.getKeySize(), MPI::UNSIGNED_CHAR, i, 0);
+      memcpy(key, buffer + j * (conf.getKeySize() + conf.getValueSize()), conf.getKeySize());
       decode_list.push_back(key);
     }
     decode_lists.push_back(decode_list);
     MPI::COMM_WORLD.Barrier();
   }
+  delete [] buffer;
+
+  // time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+  time /= conf.getNumReducer();
+  transfer_time = time;
+
+  // for (int i = 1; i <= conf.getNumReducer(); i++) {
+  //   // receive from worker[i]
+  //   LineList decode_list;
+  //   for (int j = 0; j < size; j++) {
+  //     unsigned char* key = new unsigned char[conf.getKeySize()];
+  //     MPI::COMM_WORLD.Recv(key, conf.getKeySize(), MPI::UNSIGNED_CHAR, i, 0);
+  //     decode_list.push_back(key);
+  //   }
+  //   decode_lists.push_back(decode_list);
+  //   MPI::COMM_WORLD.Barrier();
+  // }
 
 
 

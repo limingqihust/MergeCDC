@@ -379,20 +379,21 @@ void Worker::sendDecodedList() {
       MPI::COMM_WORLD.Send(keys, size * (conf->getKeySize() + conf->getValueSize()), MPI::UNSIGNED_CHAR, 0, 0 );
     }
     MPI::COMM_WORLD.Barrier();
-  }
-  delete [] keys;
-  for (int i = 1; i <= conf->getNumReducer(); i++) {
-    if (i != rank) {
-      MPI::COMM_WORLD.Barrier();
-      continue;
-    }
-    int size = conf->getNumSamples() / conf->getNumReducer();
-    for (int i = 0; i < size; i++) {
-      unsigned char* key = localList[i];
-      MPI::COMM_WORLD.Send(key, conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0 );
-    }
     MPI::COMM_WORLD.Barrier();
   }
+  delete [] keys;
+  // for (int i = 1; i <= conf->getNumReducer(); i++) {
+  //   if (i != rank) {
+  //     MPI::COMM_WORLD.Barrier();
+  //     continue;
+  //   }
+  //   int size = conf->getNumSamples() / conf->getNumReducer();
+  //   for (int i = 0; i < size; i++) {
+  //     unsigned char* key = localList[i];
+  //     MPI::COMM_WORLD.Send(key, conf->getKeySize(), MPI::UNSIGNED_CHAR, 0, 0 );
+  //   }
+  //   MPI::COMM_WORLD.Barrier();
+  // }
 }
 
 void Worker::receiveReduceCodedJob() {
