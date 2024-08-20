@@ -366,6 +366,14 @@ void Worker::sendDecodedList() {
     memcpy(keys + i * (conf->getKeySize() + conf->getValueSize()), key, conf->getKeySize());
   }
   MPI::COMM_WORLD.Barrier();
+  // send result of dual redundancy
+  for (int i = 1; i <= conf->getNumReducer(); i++) {
+    if (i == rank) {
+      MPI::COMM_WORLD.Send(keys, size * (conf->getKeySize() + conf->getValueSize()), MPI::UNSIGNED_CHAR, 0, 0 );
+    }
+    MPI::COMM_WORLD.Barrier();
+  }
+  // send result of code compution
   for (int i = 1; i <= conf->getNumReducer(); i++) {
     if (i == rank) {
       MPI::COMM_WORLD.Send(keys, size * (conf->getKeySize() + conf->getValueSize()), MPI::UNSIGNED_CHAR, 0, 0 );

@@ -142,17 +142,9 @@ void Master::run()
   }
   gettimeofday(&total_end,NULL);
   total_time = (total_end.tv_sec*1000000.0 + total_end.tv_usec - total_start.tv_sec*1000000.0 - total_start.tv_usec) / 1000000.0;
+  total_time -= transfer_time * conf.getNumReducer();
   std::cout << "total time: " << total_time << std::endl;
   std::cout << "loss: " << encode_total_time / total_time << std::endl;;
-  // 100000000 / 20 = 5000000
-  double size = conf.getNumSamples() / conf.getNumReducer();
-
-  // 500000000 / (20.9116 + 8.79666) / 1024 / 1024 = 16.05065925110138
-  double encode_node_bandwidth = size * (conf.getKeySize() + conf.getValueSize()) / (transfer_time + decode_time) / 1024 / 1024;
-  // 500000000 / (20.9116) / 1024 / 1024 = 22.802519090032565
-  double dupb_node_bandwidth = size * (conf.getKeySize() + conf.getValueSize()) / transfer_time / 1024 / 1024;
-  std::cout << "encode node bandwidth: " << encode_node_bandwidth << std::endl;
-  std::cout << "dup node bandwidth: " << dupb_node_bandwidth << std::endl;
 }
 
 
@@ -251,6 +243,24 @@ void Master::receiveAndDecode() {
   int size = conf.getNumSamples() / conf.getNumReducer();
   unsigned char* buffer = new unsigned char[size * (conf.getKeySize() + conf.getValueSize())];
   MPI::COMM_WORLD.Barrier();
+
+  // receive result of dual redundancy
+  gettimeofday(&start,NULL);
+  for (int i = 1; i <= conf.getNumReducer(); i++) {
+    MPI::COMM_WORLD.Recv(buffer, size * (conf.getKeySize() + conf.getValueSize()), MPI::UNSIGNED_CHAR, i, 0);
+    MPI::COMM_WORLD.Barrier();
+  }
+  gettimeofday(&end, NULL);
+  // delete [] buffer;
+
+  time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
+  time /= conf.getNumReducer();
+  std::cout << "transfer time(s): " << time << std::endl;
+  std::cout << "chunk size(byte): " << (double)(size * conf.getLineSize()) << std::endl;
+  std::cout << "dual redundancy bandwidth(Mb/s): " << (double)(size * conf.getLineSize()) / time / 1000 / 1000 * 8 << std::endl;
+  transfer_time = time;
+  
+  // receive result of code compution
   gettimeofday(&start,NULL);
   for (int i = 1; i <= conf.getNumReducer(); i++) {
     MPI::COMM_WORLD.Recv(buffer, size * (conf.getKeySize() + conf.getValueSize()), MPI::UNSIGNED_CHAR, i, 0);
@@ -261,9 +271,9 @@ void Master::receiveAndDecode() {
 
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   time /= conf.getNumReducer();
-  std::cout << "transfer time: " << time << std::endl;
+  // std::cout << "transfer time: " << time << std::endl;
   transfer_time = time;
-  // receive 
+
   for (int i = 1; i <= conf.getNumReducer(); i++) {
     // receive from worker[i]
     LineList decode_list;
@@ -291,7 +301,9 @@ void Master::receiveAndDecode() {
 
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
-  std::cout << "decode time: " << time << std::endl;
+  std::cout << "total decode time(s): " << time + transfer_time << std::endl;
+  std::cout << "chunk size(byte): " << (double)(size * conf.getLineSize()) << std::endl;
+  std::cout << "code computation bandwidth(Mb/s): " << (double)(size * conf.getLineSize()) / (time + transfer_time) / 1000 / 1000 * 8 << std::endl;
   decode_time = time;
 
   for (auto decode_list: decode_lists) {
