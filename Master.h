@@ -12,6 +12,9 @@ class Master
   std::vector<LineList> heaps;
   LineList encodedList;
   LineList encodedList2;
+  LineList encodedList3;
+  LineList encodedList4;
+  LineList encodedList5;
 
  public:
  Master( unsigned int _rank, unsigned int _totalNode ): rank( _rank ), totalNode( _totalNode ) {};

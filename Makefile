@@ -1,5 +1,5 @@
 CC = mpic++
-CFLAGS = -std=c++11 -Wall -lpthread
+CFLAGS = -std=c++11 -Wall -lpthread -ggdb
 DFLAGS = -std=c++11 -Wall -ggdb
 
 all: TeraSort CodedTeraSort Splitter InputPlacement InputPlacementRandom

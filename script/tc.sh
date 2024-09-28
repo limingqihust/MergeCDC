@@ -1,7 +1,7 @@
 #! /bin/bash
  
 host_num=32
-host_address=192.168.0.          
+host_address=192.168.1.          
 host_hostname=node     
 host_username=root                 
 self_ip="$1"

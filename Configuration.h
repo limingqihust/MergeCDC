@@ -26,11 +26,11 @@ class Configuration {
     // strcpy(inputPath, "./Input/Input10000");
     // strcpy(outputPath, "./Output/Output10000");
     // strcpy(partitionPath, "./Partition/Partition10000");
-    strcpy(inputPath, "/root/MergeCDC/Input/tera10G");
-    strcpy(outputPath, "/root/MergeCDC/Output/tera10G");
-    strcpy(partitionPath, "/root/MergeCDC/Partition/tera10G");
+    strcpy(inputPath, "/root/exp3/MergeCDC/Input/tera1G");
+    strcpy(outputPath, "/root/exp3/MergeCDC/Output/tera1G");
+    strcpy(partitionPath, "/root/exp3/MergeCDC/Partition/tera1G");
     // numSamples = 10000;
-    numSamples = 100000000;
+    numSamples = 10000000;
   }
   ~Configuration() {}
   const static unsigned int KEY_SIZE = 10;

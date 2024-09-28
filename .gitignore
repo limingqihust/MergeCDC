@@ -2,6 +2,7 @@
 *.o
 Input/*_*
 Input/tera10G*
+Input/tera1G
 Output/*_*
 TeraSort
 CodedTeraSort
