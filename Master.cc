@@ -138,6 +138,15 @@ void Master::run()
   for (auto key: encodedList2) {
     delete [] key;
   }
+  for (auto key: encodedList3) {
+    delete [] key;
+  }
+  for (auto key: encodedList4) {
+    delete [] key;
+  }
+  for (auto key: encodedList5) {
+    delete [] key;
+  }
   gettimeofday(&total_end,NULL);
   total_time = (total_end.tv_sec*1000000.0 + total_end.tv_usec - total_start.tv_sec*1000000.0 - total_start.tv_usec) / 1000000.0;
   std::cout << "total time: " << total_time << std::endl;
@@ -153,7 +162,9 @@ void Master::run()
   std::cout << "dup node bandwidth: " << dupb_node_bandwidth << std::endl;
   std::cout << "total size(byte): " << conf.getNumSamples() * conf.getLineSize() << std::endl;
   std::cout << "code_time(s): " << code_time << std::endl;
+  std::cout << "code_overhead(%): " << (double)(20 + 5) / 20 * 100 << std::endl;
   std::cout << "dup_time(s): " << dup_time << std::endl;
+  std::cout << "dup_overhead(%): " << (double)3 / 1 * 100 << std::endl;
   std::cout << "ratio: " << 1 - code_time / dup_time << std::endl;
 }
 
@@ -207,6 +218,12 @@ void Master::encodeAndSort() {
     encodedList.push_back(key);
     unsigned char* key2 = new unsigned char[conf.getKeySize()];
     encodedList2.push_back(key2);
+    unsigned char* key3 = new unsigned char[conf.getKeySize()];
+    encodedList3.push_back(key3);
+    unsigned char* key4 = new unsigned char[conf.getKeySize()];
+    encodedList4.push_back(key4);
+    unsigned char* key5 = new unsigned char[conf.getKeySize()];
+    encodedList5.push_back(key5);
   }
   gettimeofday(&start,NULL);
 
@@ -229,8 +246,43 @@ void Master::encodeAndSort() {
       }
     }
   });
+
+  std::thread thd3([&](){
+    for (int i = 0; i < conf.getNumReducer(); i++) {
+      for (int j = 0; j < size; j++) {
+        for (int k = 0; k < conf.getKeySize(); k++) {
+          encodedList3[j][k] += (i + 1) * heaps[i][j][k];
+        }
+      }
+    }
+  });
+
+  std::thread thd4([&](){
+    for (int i = 0; i < conf.getNumReducer(); i++) {
+      for (int j = 0; j < size; j++) {
+        for (int k = 0; k < conf.getKeySize(); k++) {
+          encodedList4[j][k] += (i + 1) * heaps[i][j][k];
+        }
+      }
+    }
+  });
+
+  std::thread thd5([&](){
+    for (int i = 0; i < conf.getNumReducer(); i++) {
+      for (int j = 0; j < size; j++) {
+        for (int k = 0; k < conf.getKeySize(); k++) {
+          encodedList5[j][k] += (i + 1) * heaps[i][j][k];
+        }
+      }
+    }
+  });
+
+
   thd1.join();
   thd2.join();
+  thd3.join();
+  thd4.join();
+  thd5.join();
   // std::cout << "encoded list:" << std::endl;
   // printLineList(encodedList);
   gettimeofday(&end,NULL);
@@ -342,6 +394,40 @@ void Master::assignReduceCodedJob() {
   MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, 2, 0 );
   delete [] buffer;
   MPI::COMM_WORLD.Barrier();
+
+  // send encoded data2 to worker
+  size = encodedList2.size();
+  buffer = new unsigned char[size * conf.getLineSize()];
+  // std::cout << "send size: " << size * conf.getLineSize() << " to node 3" << std::endl;
+  for (int j = 0; j < size; j++) {
+    memcpy(buffer + j * conf.getLineSize(), encodedList[j], conf.getLineSize());
+  }
+  MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, 3, 0 );
+  delete [] buffer;
+  MPI::COMM_WORLD.Barrier();
+
+  // send encoded data3 to worker
+  size = encodedList2.size();
+  buffer = new unsigned char[size * conf.getLineSize()];
+  // std::cout << "send size: " << size * conf.getLineSize() << " to node 4" << std::endl;
+  for (int j = 0; j < size; j++) {
+    memcpy(buffer + j * conf.getLineSize(), encodedList[j], conf.getLineSize());
+  }
+  MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, 4, 0 );
+  delete [] buffer;
+  MPI::COMM_WORLD.Barrier();
+
+  // send encoded data4 to worker
+  size = encodedList2.size();
+  buffer = new unsigned char[size * conf.getLineSize()];
+  // std::cout << "send size: " << size * conf.getLineSize() << " to node 5" << std::endl;
+  for (int j = 0; j < size; j++) {
+    memcpy(buffer + j * conf.getLineSize(), encodedList[j], conf.getLineSize());
+  }
+  MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, 5, 0 );
+  delete [] buffer;
+  MPI::COMM_WORLD.Barrier();
+
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer coded reduce job time: " << time << std::endl;
@@ -416,6 +502,19 @@ void Master::assignReduceDupJob() {
     delete [] buffer;
     MPI::COMM_WORLD.Barrier();
   }
+
+ for (int i = 1; i <= conf.getNumReducer(); i++) {
+    int size = heaps[i - 1].size();
+    unsigned char* buffer = new unsigned char[size * conf.getLineSize()];
+    // std::cout << "send size: " << size * conf.getLineSize() << " to node: " << i << std::endl;
+    for (int j = 0; j < size; j++) {
+      memcpy(buffer + j * conf.getKeySize(), heaps[i - 1][j], conf.getKeySize());
+    }
+    MPI::COMM_WORLD.Send(buffer, size * conf.getLineSize(), MPI::UNSIGNED_CHAR, i, 0 );
+    delete [] buffer;
+    MPI::COMM_WORLD.Barrier();
+  }
+
   gettimeofday(&end, NULL);
   time = (end.tv_sec*1000000.0 + end.tv_usec - start.tv_sec*1000000.0 - start.tv_usec) / 1000000.0;
   std::cout << "transfer dup reduce job time: " << time << std::endl;

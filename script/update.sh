@@ -1,7 +1,7 @@
 host_num=32
 NODE_NAME=node
 USER=root
-host_address=192.168.0.
+host_address=192.168.1.
 
 
 for((i=1; i<=$host_num; i++));
@@ -32,8 +32,10 @@ do
     # scp /root/MergeCDC/hostfile $USER@$host:/root/MergeCDC/
     # scp -r /root/MergeCDC $USER@$host:/root/
     # scp -r /root/MergeCDC/script/tc.sh  $USER@$host:/root/MergeCDC/script/
-    ssh $host "mkdir -p /root/wordcount-exp3/MergeCDC/script"
-    scp -r /root/wordcount-exp3/MergeCDC/script/tc.sh $USER@$host:/root/wordcount-exp3/MergeCDC/script/
+    # ssh $host "mkdir -p /root/wordcount-exp3/MergeCDC/script"
+    # ssh $host "mkdir -p /root/wordcount-exp3"
+    # scp -r /root/wordcount-exp3/MergeCDC $USER@$host:/root/wordcount-exp3/
+    # scp -r /root/wordcount-exp3/MergeCDC/script/tc.sh $USER@$host:/root/wordcount-exp3/MergeCDC/script/
     scp /root/wordcount-exp3/MergeCDC/TeraSort $USER@$host:/root/wordcount-exp3/MergeCDC/
 } &
 done

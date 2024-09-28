@@ -423,6 +423,30 @@ void Worker::receiveReduceCodedJob() {
   }
   MPI::COMM_WORLD.Barrier();
 
+  if (rank == 3) {
+    unsigned char* buffer = new unsigned char[size * conf->getLineSize()];
+    MPI::COMM_WORLD.Recv(buffer, size * conf->getLineSize(), MPI::UNSIGNED_CHAR, 0, 0);
+    // std::cout << "rank: " << rank << " receive from master, size(byte): " << size * conf->getLineSize() << std::endl;
+    delete [] buffer;
+  }
+  MPI::COMM_WORLD.Barrier();
+
+  if (rank == 4) {
+    unsigned char* buffer = new unsigned char[size * conf->getLineSize()];
+    MPI::COMM_WORLD.Recv(buffer, size * conf->getLineSize(), MPI::UNSIGNED_CHAR, 0, 0);
+    // std::cout << "rank: " << rank << " receive from master, size(byte): " << size * conf->getLineSize() << std::endl;
+    delete [] buffer;
+  }
+  MPI::COMM_WORLD.Barrier();
+
+  if (rank == 5) {
+    unsigned char* buffer = new unsigned char[size * conf->getLineSize()];
+    MPI::COMM_WORLD.Recv(buffer, size * conf->getLineSize(), MPI::UNSIGNED_CHAR, 0, 0);
+    // std::cout << "rank: " << rank << " receive from master, size(byte): " << size * conf->getLineSize() << std::endl;
+    delete [] buffer;
+  }
+  MPI::COMM_WORLD.Barrier();
+
 }
 
 void Worker::receiveReduceDupJob() {
@@ -447,6 +471,17 @@ void Worker::receiveReduceDupJob() {
     }
     MPI::COMM_WORLD.Barrier();
   }
+
+  for (int i = 1; i <= conf->getNumReducer(); i++) {
+    if (i == rank) {
+      unsigned char* buffer = new unsigned char[size * conf->getLineSize()];
+      MPI::COMM_WORLD.Recv(buffer, size * conf->getLineSize(), MPI::UNSIGNED_CHAR, 0, 0);
+      // std::cout << "rank: " << rank << " receive from master, size(byte): " << size * conf->getLineSize() << std::endl;
+      delete [] buffer;
+    }
+    MPI::COMM_WORLD.Barrier();
+  }
+
 }
 
 
